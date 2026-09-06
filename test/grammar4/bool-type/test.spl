@@ -1,0 +1,4 @@
+val a: Bool = true;
+val b: Bool = false;
+val cmp: Bool = 1 == 1;
+return 0;

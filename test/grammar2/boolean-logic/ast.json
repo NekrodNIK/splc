@@ -1,0 +1,51 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "Declare",
+    "mut": "var",
+    "name": "a",
+    "init": {
+      "kind": "BoolLiteral",
+      "value": true
+    }
+  },
+{
+    "kind": "Declare",
+    "mut": "var",
+    "name": "b",
+    "init": {
+      "kind": "BoolLiteral",
+      "value": false
+    }
+  },
+{
+    "kind": "Declare",
+    "mut": "var",
+    "name": "c",
+    "init": {
+      "kind": "BinOp",
+      "op": "||",
+      "left": {
+        "kind": "BinOp",
+        "op": "&&",
+        "left": {
+          "kind": "Ident",
+          "name": "a"
+        },
+        "right": {
+          "kind": "Ident",
+          "name": "b"
+        }
+      },
+      "right": {
+        "kind": "Unary",
+        "op": "!",
+        "operand": {
+          "kind": "Ident",
+          "name": "a"
+        }
+      }
+    }
+  }
+]}

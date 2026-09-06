@@ -1,0 +1,35 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "Declare",
+    "mut": "var",
+    "type": "Bool",
+    "name": "x",
+    "init": {
+      "kind": "BoolLiteral",
+      "value": true
+    }
+  },
+{
+    "kind": "Declare",
+    "mut": "var",
+    "type": "Int64",
+    "name": "y",
+    "init": {
+      "kind": "Cast",
+      "type": "Int64",
+      "value": {
+        "kind": "Ident",
+        "name": "x"
+      }
+    }
+  },
+{
+    "kind": "Return",
+    "value": {
+      "kind": "Ident",
+      "name": "y"
+    }
+  }
+]}

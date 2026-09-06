@@ -1,0 +1,24 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "FuncDecl",
+    "name": "foo",
+    "params": [],
+    "body": {
+      "kind": "Block",
+      "body": [
+{
+        "kind": "ExprStmt",
+        "value": {
+          "kind": "Call",
+          "callee": {
+            "kind": "Ident",
+            "name": "bar"
+          },
+          "args": []
+        }
+      }
+    ]}
+  }
+]}

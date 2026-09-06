@@ -1,0 +1,45 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "Declare",
+    "mut": "var",
+    "name": "result",
+    "init": {
+      "kind": "BinOp",
+      "op": "/",
+      "left": {
+        "kind": "BinOp",
+        "op": "*",
+        "left": {
+          "kind": "BinOp",
+          "op": "+",
+          "left": {
+            "kind": "IntLiteral",
+            "value": 1
+          },
+          "right": {
+            "kind": "IntLiteral",
+            "value": 2
+          }
+        },
+        "right": {
+          "kind": "BinOp",
+          "op": "-",
+          "left": {
+            "kind": "IntLiteral",
+            "value": 3
+          },
+          "right": {
+            "kind": "IntLiteral",
+            "value": 4
+          }
+        }
+      },
+      "right": {
+        "kind": "IntLiteral",
+        "value": 5
+      }
+    }
+  }
+]}

@@ -1,0 +1,93 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "StructDecl",
+    "name": "Point",
+    "fields": [
+{
+      "kind": "Declare",
+      "mut": "val",
+      "type": "Int64",
+      "name": "x",
+      "init": null
+    },
+{
+      "kind": "Declare",
+      "mut": "val",
+      "type": "Int64",
+      "name": "y",
+      "init": null
+    }
+  ]},
+{
+    "kind": "Declare",
+    "mut": "var",
+    "type": "Point",
+    "name": "p",
+    "init": null
+  },
+{
+    "kind": "Assign",
+    "target": {
+      "kind": "FieldAccess",
+      "base": {
+        "kind": "Ident",
+        "name": "p"
+      },
+      "field": "x"
+    },
+    "value": {
+      "kind": "IntLiteral",
+      "value": 10
+    }
+  },
+{
+    "kind": "Assign",
+    "target": {
+      "kind": "FieldAccess",
+      "base": {
+        "kind": "Ident",
+        "name": "p"
+      },
+      "field": "y"
+    },
+    "value": {
+      "kind": "IntLiteral",
+      "value": 20
+    }
+  },
+{
+    "kind": "Declare",
+    "mut": "val",
+    "type": "Int64",
+    "name": "sum",
+    "init": {
+      "kind": "BinOp",
+      "op": "+",
+      "left": {
+        "kind": "FieldAccess",
+        "base": {
+          "kind": "Ident",
+          "name": "p"
+        },
+        "field": "x"
+      },
+      "right": {
+        "kind": "FieldAccess",
+        "base": {
+          "kind": "Ident",
+          "name": "p"
+        },
+        "field": "y"
+      }
+    }
+  },
+{
+    "kind": "Return",
+    "value": {
+      "kind": "Ident",
+      "name": "sum"
+    }
+  }
+]}

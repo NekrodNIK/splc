@@ -1,0 +1,103 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "StructDecl",
+    "name": "Inner",
+    "fields": [
+{
+      "kind": "Declare",
+      "mut": "val",
+      "type": "Int64",
+      "name": "value",
+      "init": null
+    }
+  ]},
+{
+    "kind": "StructDecl",
+    "name": "Outer",
+    "fields": [
+{
+      "kind": "Declare",
+      "mut": "val",
+      "type": "Inner",
+      "name": "inner",
+      "init": null
+    },
+{
+      "kind": "Declare",
+      "mut": "val",
+      "type": "Int64",
+      "name": "extra",
+      "init": null
+    }
+  ]},
+{
+    "kind": "Declare",
+    "mut": "var",
+    "type": "Outer",
+    "name": "o",
+    "init": null
+  },
+{
+    "kind": "Assign",
+    "target": {
+      "kind": "FieldAccess",
+      "base": {
+        "kind": "FieldAccess",
+        "base": {
+          "kind": "Ident",
+          "name": "o"
+        },
+        "field": "inner"
+      },
+      "field": "value"
+    },
+    "value": {
+      "kind": "IntLiteral",
+      "value": 42
+    }
+  },
+{
+    "kind": "Assign",
+    "target": {
+      "kind": "FieldAccess",
+      "base": {
+        "kind": "Ident",
+        "name": "o"
+      },
+      "field": "extra"
+    },
+    "value": {
+      "kind": "IntLiteral",
+      "value": 7
+    }
+  },
+{
+    "kind": "Return",
+    "value": {
+      "kind": "BinOp",
+      "op": "+",
+      "left": {
+        "kind": "FieldAccess",
+        "base": {
+          "kind": "FieldAccess",
+          "base": {
+            "kind": "Ident",
+            "name": "o"
+          },
+          "field": "inner"
+        },
+        "field": "value"
+      },
+      "right": {
+        "kind": "FieldAccess",
+        "base": {
+          "kind": "Ident",
+          "name": "o"
+        },
+        "field": "extra"
+      }
+    }
+  }
+]}

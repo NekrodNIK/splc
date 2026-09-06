@@ -1,0 +1,18 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "Declare",
+    "mut": "val",
+    "type": "Int64",
+    "name": "x",
+    "init": {
+      "kind": "Cast",
+      "type": "Int64",
+      "value": {
+        "kind": "Error",
+        "message": "unexpected token 'SEMI'"
+      }
+    }
+  }
+]}

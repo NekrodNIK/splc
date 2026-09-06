@@ -1,0 +1,8 @@
+def add(a, b) {
+    return a + b;
+}
+
+def main() {
+    var x = add(add(1, 2), add(3, 4));
+    return x;
+}

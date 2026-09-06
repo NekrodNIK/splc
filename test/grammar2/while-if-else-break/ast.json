@@ -1,0 +1,84 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "Declare",
+    "mut": "var",
+    "name": "x",
+    "init": {
+      "kind": "IntLiteral",
+      "value": 0
+    }
+  },
+{
+    "kind": "While",
+    "cond": {
+      "kind": "BinOp",
+      "op": "<",
+      "left": {
+        "kind": "Ident",
+        "name": "x"
+      },
+      "right": {
+        "kind": "IntLiteral",
+        "value": 10
+      }
+    },
+    "body": {
+      "kind": "Block",
+      "body": [
+{
+        "kind": "If",
+        "cond": {
+          "kind": "BinOp",
+          "op": "<",
+          "left": {
+            "kind": "Ident",
+            "name": "x"
+          },
+          "right": {
+            "kind": "IntLiteral",
+            "value": 5
+          }
+        },
+        "then": {
+          "kind": "Block",
+          "body": [
+{
+            "kind": "Assign",
+            "target": {
+              "kind": "Ident",
+              "name": "x"
+            },
+            "value": {
+              "kind": "BinOp",
+              "op": "+",
+              "left": {
+                "kind": "Ident",
+                "name": "x"
+              },
+              "right": {
+                "kind": "IntLiteral",
+                "value": 1
+              }
+            }
+          }
+        ]},
+        "else": {
+          "kind": "Block",
+          "body": [
+{
+            "kind": "Break"
+          }
+        ]}
+      }
+    ]}
+  },
+{
+    "kind": "Return",
+    "value": {
+      "kind": "Ident",
+      "name": "x"
+    }
+  }
+]}

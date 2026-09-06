@@ -1,0 +1,14 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "Break"
+  },
+{
+    "kind": "Return",
+    "value": {
+      "kind": "IntLiteral",
+      "value": 0
+    }
+  }
+]}

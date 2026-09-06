@@ -1,0 +1,9 @@
+{
+  "grammar": ">=2",
+  "stages": ["lexer", "parser", "llvm"],
+  "exit": {
+    "lexer": 0,
+    "parser": 0,
+    "llvm": "nonzero"
+  }
+}

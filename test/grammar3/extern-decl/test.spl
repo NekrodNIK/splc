@@ -1,0 +1,1 @@
+extern def putchar(c);

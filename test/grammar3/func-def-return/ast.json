@@ -1,0 +1,20 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "FuncDecl",
+    "name": "foo",
+    "params": [],
+    "body": {
+      "kind": "Block",
+      "body": [
+{
+        "kind": "Return",
+        "value": {
+          "kind": "IntLiteral",
+          "value": 42
+        }
+      }
+    ]}
+  }
+]}

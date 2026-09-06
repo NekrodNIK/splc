@@ -1,0 +1,106 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "Declare",
+    "mut": "var",
+    "name": "cmp",
+    "init": {
+      "kind": "BinOp",
+      "op": "==",
+      "left": {
+        "kind": "IntLiteral",
+        "value": 1
+      },
+      "right": {
+        "kind": "IntLiteral",
+        "value": 2
+      }
+    }
+  },
+{
+    "kind": "Declare",
+    "mut": "var",
+    "name": "cmp2",
+    "init": {
+      "kind": "BinOp",
+      "op": "!=",
+      "left": {
+        "kind": "IntLiteral",
+        "value": 3
+      },
+      "right": {
+        "kind": "IntLiteral",
+        "value": 4
+      }
+    }
+  },
+{
+    "kind": "Declare",
+    "mut": "var",
+    "name": "cmp3",
+    "init": {
+      "kind": "BinOp",
+      "op": "<",
+      "left": {
+        "kind": "IntLiteral",
+        "value": 5
+      },
+      "right": {
+        "kind": "IntLiteral",
+        "value": 6
+      }
+    }
+  },
+{
+    "kind": "Declare",
+    "mut": "var",
+    "name": "cmp4",
+    "init": {
+      "kind": "BinOp",
+      "op": ">",
+      "left": {
+        "kind": "IntLiteral",
+        "value": 7
+      },
+      "right": {
+        "kind": "IntLiteral",
+        "value": 8
+      }
+    }
+  },
+{
+    "kind": "Declare",
+    "mut": "var",
+    "name": "cmp5",
+    "init": {
+      "kind": "BinOp",
+      "op": "<=",
+      "left": {
+        "kind": "IntLiteral",
+        "value": 9
+      },
+      "right": {
+        "kind": "IntLiteral",
+        "value": 10
+      }
+    }
+  },
+{
+    "kind": "Declare",
+    "mut": "var",
+    "name": "cmp6",
+    "init": {
+      "kind": "BinOp",
+      "op": ">=",
+      "left": {
+        "kind": "IntLiteral",
+        "value": 11
+      },
+      "right": {
+        "kind": "IntLiteral",
+        "value": 12
+      }
+    }
+  }
+]}

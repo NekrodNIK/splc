@@ -1,0 +1,225 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "StructDecl",
+    "name": "Mixed",
+    "fields": [
+{
+      "kind": "Declare",
+      "mut": "val",
+      "type": "Int8",
+      "name": "a",
+      "init": null
+    },
+{
+      "kind": "Declare",
+      "mut": "val",
+      "type": "Int16",
+      "name": "b",
+      "init": null
+    },
+{
+      "kind": "Declare",
+      "mut": "val",
+      "type": "Int32",
+      "name": "c",
+      "init": null
+    },
+{
+      "kind": "Declare",
+      "mut": "val",
+      "type": "Int64",
+      "name": "d",
+      "init": null
+    },
+{
+      "kind": "Declare",
+      "mut": "val",
+      "type": "Bool",
+      "name": "e",
+      "init": null
+    },
+{
+      "kind": "Declare",
+      "mut": "val",
+      "type": "String",
+      "name": "f",
+      "init": null
+    }
+  ]},
+{
+    "kind": "Declare",
+    "mut": "var",
+    "type": "Mixed",
+    "name": "m",
+    "init": null
+  },
+{
+    "kind": "Assign",
+    "target": {
+      "kind": "FieldAccess",
+      "base": {
+        "kind": "Ident",
+        "name": "m"
+      },
+      "field": "a"
+    },
+    "value": {
+      "kind": "IntLiteral",
+      "value": 1
+    }
+  },
+{
+    "kind": "Assign",
+    "target": {
+      "kind": "FieldAccess",
+      "base": {
+        "kind": "Ident",
+        "name": "m"
+      },
+      "field": "b"
+    },
+    "value": {
+      "kind": "IntLiteral",
+      "value": 2
+    }
+  },
+{
+    "kind": "Assign",
+    "target": {
+      "kind": "FieldAccess",
+      "base": {
+        "kind": "Ident",
+        "name": "m"
+      },
+      "field": "c"
+    },
+    "value": {
+      "kind": "IntLiteral",
+      "value": 3
+    }
+  },
+{
+    "kind": "Assign",
+    "target": {
+      "kind": "FieldAccess",
+      "base": {
+        "kind": "Ident",
+        "name": "m"
+      },
+      "field": "d"
+    },
+    "value": {
+      "kind": "IntLiteral",
+      "value": 4
+    }
+  },
+{
+    "kind": "Assign",
+    "target": {
+      "kind": "FieldAccess",
+      "base": {
+        "kind": "Ident",
+        "name": "m"
+      },
+      "field": "e"
+    },
+    "value": {
+      "kind": "BoolLiteral",
+      "value": true
+    }
+  },
+{
+    "kind": "Assign",
+    "target": {
+      "kind": "FieldAccess",
+      "base": {
+        "kind": "Ident",
+        "name": "m"
+      },
+      "field": "f"
+    },
+    "value": {
+      "kind": "StringLiteral",
+      "value": "hi"
+    }
+  },
+{
+    "kind": "Declare",
+    "mut": "var",
+    "type": "Int64",
+    "name": "result",
+    "init": null
+  },
+{
+    "kind": "Assign",
+    "target": {
+      "kind": "Ident",
+      "name": "result"
+    },
+    "value": {
+      "kind": "BinOp",
+      "op": "+",
+      "left": {
+        "kind": "BinOp",
+        "op": "+",
+        "left": {
+          "kind": "BinOp",
+          "op": "+",
+          "left": {
+            "kind": "Cast",
+            "type": "Int64",
+            "value": {
+              "kind": "FieldAccess",
+              "base": {
+                "kind": "Ident",
+                "name": "m"
+              },
+              "field": "a"
+            }
+          },
+          "right": {
+            "kind": "Cast",
+            "type": "Int64",
+            "value": {
+              "kind": "FieldAccess",
+              "base": {
+                "kind": "Ident",
+                "name": "m"
+              },
+              "field": "b"
+            }
+          }
+        },
+        "right": {
+          "kind": "Cast",
+          "type": "Int64",
+          "value": {
+            "kind": "FieldAccess",
+            "base": {
+              "kind": "Ident",
+              "name": "m"
+            },
+            "field": "c"
+          }
+        }
+      },
+      "right": {
+        "kind": "FieldAccess",
+        "base": {
+          "kind": "Ident",
+          "name": "m"
+        },
+        "field": "d"
+      }
+    }
+  },
+{
+    "kind": "Return",
+    "value": {
+      "kind": "Ident",
+      "name": "result"
+    }
+  }
+]}

@@ -1,0 +1,21 @@
+name: harness-self-test
+
+# Self-tests for the run_tests.py test harness, driven by a mock compiler.
+# These need no real compiler (no cmake build) — see test/.self-test/.
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  harness:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install test dependency
+        run: pip install pytest
+      - name: Run harness self-tests
+        run: python -m pytest test/.self-test -v

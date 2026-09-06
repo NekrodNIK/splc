@@ -1,0 +1,50 @@
+{
+  "build": "",
+  "default_grammar": "1",
+  "versions": [1, 2, 3, 4, 5],
+  "out_dir": "{root}/test/build",
+  "stages": {
+    "lexer": {
+      "cmd": ["{root}/build/splc", "-g", "{grammar}", "-t", "{tokens_in}", "{input}"],
+      "out": "{tokens_out}",
+      "preprocess": [
+        {"type": "json", "keep": ["kind", "line", "column"]}
+      ]
+    },
+    "parser": {
+      "cmd": ["{root}/build/splc", "-g", "{grammar}", "-a", "{ast_in}", "{input}"],
+      "out": "{ast_out}",
+      "preprocess": [
+        {"type": "json", "keep": ["kind"]}
+      ]
+    },
+    "llvm": {
+      "cmd": ["{root}/build/splc", "-g", "{grammar}", "-o", "{llvm_out}", "{input}"],
+      "out": "{llvm_out}",
+      "preprocess": [
+        {"type": "llvm"}
+      ]
+    },
+    "compile": {
+      "cmd": ["{root}/build/splc", "-g", "{grammar}", "-o", "{exe}", "{input}"]
+    },
+    "run": {
+      "cmd": ["{exe}"],
+      "out": "stdout"
+    }
+  },
+  "llvm_dis": "llvm-dis",
+  "fuzz": {
+    "grammar": {
+      "1": "doc/grammar1.g4",
+      "2": "doc/grammar2.g4",
+      "3": "doc/grammar3.g4",
+      "4": "doc/grammar4.g4",
+      "5": "doc/grammar5.g4"
+    },
+    "count": 40,
+    "max_tokens": 30,
+    "exit": { "lexer": 0 },
+    "stages": ["lexer"]
+  }
+}

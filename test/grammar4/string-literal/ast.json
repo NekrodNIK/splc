@@ -1,0 +1,31 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "Declare",
+    "mut": "val",
+    "type": "String",
+    "name": "s",
+    "init": {
+      "kind": "StringLiteral",
+      "value": "hello"
+    }
+  },
+{
+    "kind": "Declare",
+    "mut": "val",
+    "type": "String",
+    "name": "msg",
+    "init": {
+      "kind": "StringLiteral",
+      "value": "world"
+    }
+  },
+{
+    "kind": "Return",
+    "value": {
+      "kind": "IntLiteral",
+      "value": 0
+    }
+  }
+]}

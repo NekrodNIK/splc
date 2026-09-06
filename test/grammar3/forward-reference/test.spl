@@ -1,0 +1,7 @@
+def main() {
+    return foo(42);
+}
+
+def foo(x) {
+    return x;
+}

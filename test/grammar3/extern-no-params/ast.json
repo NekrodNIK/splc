@@ -1,0 +1,9 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "ExternDecl",
+    "name": "foo",
+    "params": []
+  }
+]}

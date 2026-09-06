@@ -1,0 +1,2 @@
+val x: Int64 = cast(42);
+return x;

@@ -1,0 +1,75 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "Declare",
+    "mut": "val",
+    "type": "Int8",
+    "name": "a",
+    "init": {
+      "kind": "IntLiteral",
+      "value": 1
+    }
+  },
+{
+    "kind": "Declare",
+    "mut": "val",
+    "type": "Int16",
+    "name": "b",
+    "init": {
+      "kind": "IntLiteral",
+      "value": 2
+    }
+  },
+{
+    "kind": "Declare",
+    "mut": "val",
+    "type": "Int32",
+    "name": "c",
+    "init": {
+      "kind": "IntLiteral",
+      "value": 3
+    }
+  },
+{
+    "kind": "Declare",
+    "mut": "val",
+    "type": "Int64",
+    "name": "d",
+    "init": {
+      "kind": "IntLiteral",
+      "value": 4
+    }
+  },
+{
+    "kind": "Declare",
+    "mut": "val",
+    "type": "Bool",
+    "name": "e",
+    "init": {
+      "kind": "BoolLiteral",
+      "value": true
+    }
+  },
+{
+    "kind": "Declare",
+    "mut": "val",
+    "type": "String",
+    "name": "f",
+    "init": {
+      "kind": "StringLiteral",
+      "value": "hi"
+    }
+  },
+{
+    "kind": "Return",
+    "value": {
+      "kind": "Cast",
+      "type": "Int64",
+      "value": {
+        "kind": "Ident",
+        "name": "d"
+      }
+    }
+  }
+]}

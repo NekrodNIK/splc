@@ -1,0 +1,41 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "Declare",
+    "mut": "val",
+    "type": "String",
+    "name": "s",
+    "init": {
+      "kind": "StringLiteral",
+      "value": "hello\nworld\t!"
+    }
+  },
+{
+    "kind": "Declare",
+    "mut": "val",
+    "type": "String",
+    "name": "t",
+    "init": {
+      "kind": "StringLiteral",
+      "value": "quote \" here"
+    }
+  },
+{
+    "kind": "Declare",
+    "mut": "val",
+    "type": "String",
+    "name": "u",
+    "init": {
+      "kind": "StringLiteral",
+      "value": "back\\slash"
+    }
+  },
+{
+    "kind": "Return",
+    "value": {
+      "kind": "IntLiteral",
+      "value": 0
+    }
+  }
+]}

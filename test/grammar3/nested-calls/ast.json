@@ -1,0 +1,89 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "FuncDecl",
+    "name": "add",
+    "params": [{
+  "kind": "Ident",
+  "name": "a"
+}, {
+  "kind": "Ident",
+  "name": "b"
+}],
+    "body": {
+      "kind": "Block",
+      "body": [
+{
+        "kind": "Return",
+        "value": {
+          "kind": "BinOp",
+          "op": "+",
+          "left": {
+            "kind": "Ident",
+            "name": "a"
+          },
+          "right": {
+            "kind": "Ident",
+            "name": "b"
+          }
+        }
+      }
+    ]}
+  },
+{
+    "kind": "FuncDecl",
+    "name": "main",
+    "params": [],
+    "body": {
+      "kind": "Block",
+      "body": [
+{
+        "kind": "Declare",
+        "mut": "var",
+        "name": "x",
+        "init": {
+          "kind": "Call",
+          "callee": {
+            "kind": "Ident",
+            "name": "add"
+          },
+          "args": [{
+  "kind": "Call",
+  "callee": {
+    "kind": "Ident",
+    "name": "add"
+  },
+  "args": [{
+  "kind": "IntLiteral",
+  "value": 1
+}, {
+  "kind": "IntLiteral",
+  "value": 2
+}]
+}, {
+  "kind": "Call",
+  "callee": {
+    "kind": "Ident",
+    "name": "add"
+  },
+  "args": [{
+  "kind": "IntLiteral",
+  "value": 3
+}, {
+  "kind": "IntLiteral",
+  "value": 4
+}]
+}]
+        }
+      },
+{
+        "kind": "Return",
+        "value": {
+          "kind": "Ident",
+          "name": "x"
+        }
+      }
+    ]}
+  }
+]}

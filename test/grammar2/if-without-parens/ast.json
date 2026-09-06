@@ -1,0 +1,22 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "If",
+    "cond": {
+      "kind": "Error",
+      "message": "missing condition"
+    },
+    "then": {
+      "kind": "Block",
+      "body": [
+{
+        "kind": "Return",
+        "value": {
+          "kind": "IntLiteral",
+          "value": 42
+        }
+      }
+    ]}
+  }
+]}

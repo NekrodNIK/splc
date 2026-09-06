@@ -1,0 +1,13 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "FuncDecl",
+    "name": "foo",
+    "params": [],
+    "body": {
+      "kind": "Block",
+      "body": [
+    ]}
+  }
+]}

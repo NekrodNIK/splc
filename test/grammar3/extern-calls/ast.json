@@ -1,0 +1,44 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "ExternDecl",
+    "name": "putchar",
+    "params": [{
+  "kind": "Ident",
+  "name": "x"
+}]
+  },
+{
+    "kind": "Declare",
+    "mut": "var",
+    "name": "a",
+    "init": {
+      "kind": "Call",
+      "callee": {
+        "kind": "Ident",
+        "name": "putchar"
+      },
+      "args": [{
+  "kind": "IntLiteral",
+  "value": 72
+}]
+    }
+  },
+{
+    "kind": "Declare",
+    "mut": "var",
+    "name": "b",
+    "init": {
+      "kind": "Call",
+      "callee": {
+        "kind": "Ident",
+        "name": "putchar"
+      },
+      "args": [{
+  "kind": "IntLiteral",
+  "value": 105
+}]
+    }
+  }
+]}

@@ -1,0 +1,22 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "Assign",
+    "target": {
+      "kind": "Ident",
+      "name": "x"
+    },
+    "value": {
+      "kind": "IntLiteral",
+      "value": 42
+    }
+  },
+{
+    "kind": "Return",
+    "value": {
+      "kind": "Ident",
+      "name": "x"
+    }
+  }
+]}

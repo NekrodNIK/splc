@@ -1,0 +1,49 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "Declare",
+    "mut": "val",
+    "type": "Int32",
+    "name": "i32",
+    "init": {
+      "kind": "IntLiteral",
+      "value": 1000
+    }
+  },
+{
+    "kind": "Declare",
+    "mut": "val",
+    "type": "Int16",
+    "name": "i16",
+    "init": {
+      "kind": "Cast",
+      "type": "Int16",
+      "value": {
+        "kind": "Ident",
+        "name": "i32"
+      }
+    }
+  },
+{
+    "kind": "Declare",
+    "mut": "val",
+    "type": "Int64",
+    "name": "i64",
+    "init": {
+      "kind": "Cast",
+      "type": "Int64",
+      "value": {
+        "kind": "Ident",
+        "name": "i16"
+      }
+    }
+  },
+{
+    "kind": "Return",
+    "value": {
+      "kind": "Ident",
+      "name": "i64"
+    }
+  }
+]}

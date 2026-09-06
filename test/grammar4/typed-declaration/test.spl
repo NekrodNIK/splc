@@ -1,0 +1,4 @@
+val x: Int64 = 42;
+val y: Int64 = 10;
+var sum: Int64 = x + y;
+return sum;

@@ -1,0 +1,143 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "Declare",
+    "mut": "var",
+    "type": "Array[5](Int64)",
+    "name": "arr",
+    "init": null
+  },
+{
+    "kind": "Declare",
+    "mut": "var",
+    "type": "Int64",
+    "name": "i",
+    "init": null
+  },
+{
+    "kind": "Assign",
+    "target": {
+      "kind": "Ident",
+      "name": "i"
+    },
+    "value": {
+      "kind": "IntLiteral",
+      "value": 0
+    }
+  },
+{
+    "kind": "Assign",
+    "target": {
+      "kind": "Subscript",
+      "base": {
+        "kind": "Ident",
+        "name": "arr"
+      },
+      "index": {
+        "kind": "IntLiteral",
+        "value": 0
+      }
+    },
+    "value": {
+      "kind": "IntLiteral",
+      "value": 10
+    }
+  },
+{
+    "kind": "Assign",
+    "target": {
+      "kind": "Subscript",
+      "base": {
+        "kind": "Ident",
+        "name": "arr"
+      },
+      "index": {
+        "kind": "IntLiteral",
+        "value": 1
+      }
+    },
+    "value": {
+      "kind": "IntLiteral",
+      "value": 20
+    }
+  },
+{
+    "kind": "Assign",
+    "target": {
+      "kind": "Subscript",
+      "base": {
+        "kind": "Ident",
+        "name": "arr"
+      },
+      "index": {
+        "kind": "IntLiteral",
+        "value": 2
+      }
+    },
+    "value": {
+      "kind": "IntLiteral",
+      "value": 30
+    }
+  },
+{
+    "kind": "Assign",
+    "target": {
+      "kind": "Subscript",
+      "base": {
+        "kind": "Ident",
+        "name": "arr"
+      },
+      "index": {
+        "kind": "IntLiteral",
+        "value": 3
+      }
+    },
+    "value": {
+      "kind": "IntLiteral",
+      "value": 40
+    }
+  },
+{
+    "kind": "Assign",
+    "target": {
+      "kind": "Subscript",
+      "base": {
+        "kind": "Ident",
+        "name": "arr"
+      },
+      "index": {
+        "kind": "IntLiteral",
+        "value": 4
+      }
+    },
+    "value": {
+      "kind": "IntLiteral",
+      "value": 50
+    }
+  },
+{
+    "kind": "Declare",
+    "mut": "val",
+    "type": "Int64",
+    "name": "result",
+    "init": {
+      "kind": "Subscript",
+      "base": {
+        "kind": "Ident",
+        "name": "arr"
+      },
+      "index": {
+        "kind": "IntLiteral",
+        "value": 2
+      }
+    }
+  },
+{
+    "kind": "Return",
+    "value": {
+      "kind": "Ident",
+      "name": "result"
+    }
+  }
+]}

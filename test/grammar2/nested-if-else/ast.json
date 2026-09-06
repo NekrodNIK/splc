@@ -1,0 +1,94 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "Declare",
+    "mut": "var",
+    "name": "x",
+    "init": {
+      "kind": "IntLiteral",
+      "value": 1
+    }
+  },
+{
+    "kind": "Declare",
+    "mut": "var",
+    "name": "y",
+    "init": {
+      "kind": "IntLiteral",
+      "value": 0
+    }
+  },
+{
+    "kind": "Declare",
+    "mut": "var",
+    "name": "z",
+    "init": {
+      "kind": "IntLiteral",
+      "value": 0
+    }
+  },
+{
+    "kind": "If",
+    "cond": {
+      "kind": "Ident",
+      "name": "x"
+    },
+    "then": {
+      "kind": "Block",
+      "body": [
+{
+        "kind": "If",
+        "cond": {
+          "kind": "Ident",
+          "name": "y"
+        },
+        "then": {
+          "kind": "Block",
+          "body": [
+{
+            "kind": "Assign",
+            "target": {
+              "kind": "Ident",
+              "name": "z"
+            },
+            "value": {
+              "kind": "IntLiteral",
+              "value": 1
+            }
+          }
+        ]},
+        "else": {
+          "kind": "Block",
+          "body": [
+{
+            "kind": "Assign",
+            "target": {
+              "kind": "Ident",
+              "name": "z"
+            },
+            "value": {
+              "kind": "IntLiteral",
+              "value": 2
+            }
+          }
+        ]}
+      }
+    ]},
+    "else": {
+      "kind": "Block",
+      "body": [
+{
+        "kind": "Assign",
+        "target": {
+          "kind": "Ident",
+          "name": "z"
+        },
+        "value": {
+          "kind": "IntLiteral",
+          "value": 3
+        }
+      }
+    ]}
+  }
+]}

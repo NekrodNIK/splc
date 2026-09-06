@@ -1,0 +1,12 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "ExternDecl",
+    "name": "putchar",
+    "params": [{
+  "kind": "Ident",
+  "name": "c"
+}]
+  }
+]}

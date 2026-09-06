@@ -1,0 +1,72 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "FuncDecl",
+    "name": "fact",
+    "params": [{
+  "kind": "Ident",
+  "name": "n"
+}],
+    "body": {
+      "kind": "Block",
+      "body": [
+{
+        "kind": "If",
+        "cond": {
+          "kind": "BinOp",
+          "op": "<=",
+          "left": {
+            "kind": "Ident",
+            "name": "n"
+          },
+          "right": {
+            "kind": "IntLiteral",
+            "value": 1
+          }
+        },
+        "then": {
+          "kind": "Block",
+          "body": [
+{
+            "kind": "Return",
+            "value": {
+              "kind": "IntLiteral",
+              "value": 1
+            }
+          }
+        ]}
+      },
+{
+        "kind": "Return",
+        "value": {
+          "kind": "BinOp",
+          "op": "*",
+          "left": {
+            "kind": "Ident",
+            "name": "n"
+          },
+          "right": {
+            "kind": "Call",
+            "callee": {
+              "kind": "Ident",
+              "name": "fact"
+            },
+            "args": [{
+  "kind": "BinOp",
+  "op": "-",
+  "left": {
+    "kind": "Ident",
+    "name": "n"
+  },
+  "right": {
+    "kind": "IntLiteral",
+    "value": 1
+  }
+}]
+          }
+        }
+      }
+    ]}
+  }
+]}

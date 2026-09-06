@@ -1,0 +1,36 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "Declare",
+    "mut": "var",
+    "name": "x",
+    "init": {
+      "kind": "BinOp",
+      "op": "+",
+      "left": {
+        "kind": "IntLiteral",
+        "value": 2
+      },
+      "right": {
+        "kind": "BinOp",
+        "op": "*",
+        "left": {
+          "kind": "IntLiteral",
+          "value": 3
+        },
+        "right": {
+          "kind": "IntLiteral",
+          "value": 4
+        }
+      }
+    }
+  },
+{
+    "kind": "Return",
+    "value": {
+      "kind": "Ident",
+      "name": "x"
+    }
+  }
+]}

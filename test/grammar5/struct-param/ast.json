@@ -1,0 +1,189 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "StructDecl",
+    "name": "Point",
+    "fields": [
+{
+      "kind": "Declare",
+      "mut": "val",
+      "type": "Int64",
+      "name": "x",
+      "init": null
+    },
+{
+      "kind": "Declare",
+      "mut": "val",
+      "type": "Int64",
+      "name": "y",
+      "init": null
+    }
+  ]},
+{
+    "kind": "FuncDecl",
+    "name": "dotProduct",
+    "returnType": "Int64",
+    "params": [{
+  "kind": "Param",
+  "name": "a",
+  "type": "Point"
+}, {
+  "kind": "Param",
+  "name": "b",
+  "type": "Point"
+}],
+    "body": {
+      "kind": "Block",
+      "body": [
+{
+        "kind": "Return",
+        "value": {
+          "kind": "BinOp",
+          "op": "+",
+          "left": {
+            "kind": "BinOp",
+            "op": "*",
+            "left": {
+              "kind": "FieldAccess",
+              "base": {
+                "kind": "Ident",
+                "name": "a"
+              },
+              "field": "x"
+            },
+            "right": {
+              "kind": "FieldAccess",
+              "base": {
+                "kind": "Ident",
+                "name": "b"
+              },
+              "field": "x"
+            }
+          },
+          "right": {
+            "kind": "BinOp",
+            "op": "*",
+            "left": {
+              "kind": "FieldAccess",
+              "base": {
+                "kind": "Ident",
+                "name": "a"
+              },
+              "field": "y"
+            },
+            "right": {
+              "kind": "FieldAccess",
+              "base": {
+                "kind": "Ident",
+                "name": "b"
+              },
+              "field": "y"
+            }
+          }
+        }
+      }
+    ]}
+  },
+{
+    "kind": "Declare",
+    "mut": "var",
+    "type": "Point",
+    "name": "p1",
+    "init": null
+  },
+{
+    "kind": "Declare",
+    "mut": "var",
+    "type": "Point",
+    "name": "p2",
+    "init": null
+  },
+{
+    "kind": "Assign",
+    "target": {
+      "kind": "FieldAccess",
+      "base": {
+        "kind": "Ident",
+        "name": "p1"
+      },
+      "field": "x"
+    },
+    "value": {
+      "kind": "IntLiteral",
+      "value": 1
+    }
+  },
+{
+    "kind": "Assign",
+    "target": {
+      "kind": "FieldAccess",
+      "base": {
+        "kind": "Ident",
+        "name": "p1"
+      },
+      "field": "y"
+    },
+    "value": {
+      "kind": "IntLiteral",
+      "value": 2
+    }
+  },
+{
+    "kind": "Assign",
+    "target": {
+      "kind": "FieldAccess",
+      "base": {
+        "kind": "Ident",
+        "name": "p2"
+      },
+      "field": "x"
+    },
+    "value": {
+      "kind": "IntLiteral",
+      "value": 3
+    }
+  },
+{
+    "kind": "Assign",
+    "target": {
+      "kind": "FieldAccess",
+      "base": {
+        "kind": "Ident",
+        "name": "p2"
+      },
+      "field": "y"
+    },
+    "value": {
+      "kind": "IntLiteral",
+      "value": 4
+    }
+  },
+{
+    "kind": "Declare",
+    "mut": "val",
+    "type": "Int64",
+    "name": "result",
+    "init": {
+      "kind": "Call",
+      "callee": {
+        "kind": "Ident",
+        "name": "dotProduct"
+      },
+      "args": [{
+  "kind": "Ident",
+  "name": "p1"
+}, {
+  "kind": "Ident",
+  "name": "p2"
+}]
+    }
+  },
+{
+    "kind": "Return",
+    "value": {
+      "kind": "Ident",
+      "name": "result"
+    }
+  }
+]}

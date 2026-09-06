@@ -1,0 +1,12 @@
+def max(a, b) {
+    if (a > b) {
+        return a;
+    } else {
+        return b;
+    }
+}
+
+def main() {
+    var m = max(10, 20);
+    return m;
+}

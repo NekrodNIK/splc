@@ -1,0 +1,61 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "Declare",
+    "mut": "var",
+    "type": "String",
+    "name": "a",
+    "init": {
+      "kind": "StringLiteral",
+      "value": "hello"
+    }
+  },
+{
+    "kind": "Declare",
+    "mut": "var",
+    "type": "String",
+    "name": "b",
+    "init": {
+      "kind": "StringLiteral",
+      "value": "hello"
+    }
+  },
+{
+    "kind": "If",
+    "cond": {
+      "kind": "BinOp",
+      "op": "==",
+      "left": {
+        "kind": "Ident",
+        "name": "a"
+      },
+      "right": {
+        "kind": "Ident",
+        "name": "b"
+      }
+    },
+    "then": {
+      "kind": "Block",
+      "body": [
+{
+        "kind": "Return",
+        "value": {
+          "kind": "IntLiteral",
+          "value": 1
+        }
+      }
+    ]},
+    "else": {
+      "kind": "Block",
+      "body": [
+{
+        "kind": "Return",
+        "value": {
+          "kind": "IntLiteral",
+          "value": 0
+        }
+      }
+    ]}
+  }
+]}

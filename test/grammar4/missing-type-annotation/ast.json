@@ -1,0 +1,20 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "Declare",
+    "mut": "val",
+    "name": "x",
+    "init": {
+      "kind": "IntLiteral",
+      "value": 42
+    }
+  },
+{
+    "kind": "Return",
+    "value": {
+      "kind": "Ident",
+      "name": "x"
+    }
+  }
+]}

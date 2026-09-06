@@ -1,0 +1,23 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "ExternDecl",
+    "name": "foo",
+    "params": [{
+  "kind": "Ident",
+  "name": "x"
+}]
+  },
+{
+    "kind": "ExternDecl",
+    "name": "bar",
+    "params": [{
+  "kind": "Ident",
+  "name": "y"
+}, {
+  "kind": "Ident",
+  "name": "z"
+}]
+  }
+]}

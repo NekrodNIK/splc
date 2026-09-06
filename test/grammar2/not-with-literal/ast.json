@@ -1,0 +1,17 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "Declare",
+    "mut": "var",
+    "name": "x",
+    "init": {
+      "kind": "Unary",
+      "op": "!",
+      "operand": {
+        "kind": "BoolLiteral",
+        "value": true
+      }
+    }
+  }
+]}

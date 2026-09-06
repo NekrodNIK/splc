@@ -1,0 +1,29 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "FuncDecl",
+    "name": "noop",
+    "params": [],
+    "body": {
+      "kind": "Block",
+      "body": [
+{
+        "kind": "Declare",
+        "mut": "var",
+        "name": "x",
+        "init": {
+          "kind": "IntLiteral",
+          "value": 0
+        }
+      }
+    ]}
+  },
+{
+    "kind": "Return",
+    "value": {
+      "kind": "IntLiteral",
+      "value": 42
+    }
+  }
+]}

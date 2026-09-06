@@ -1,0 +1,98 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "Declare",
+    "mut": "var",
+    "name": "i",
+    "init": {
+      "kind": "IntLiteral",
+      "value": 0
+    }
+  },
+{
+    "kind": "Declare",
+    "mut": "var",
+    "name": "j",
+    "init": {
+      "kind": "IntLiteral",
+      "value": 0
+    }
+  },
+{
+    "kind": "While",
+    "cond": {
+      "kind": "BinOp",
+      "op": "<",
+      "left": {
+        "kind": "Ident",
+        "name": "i"
+      },
+      "right": {
+        "kind": "IntLiteral",
+        "value": 10
+      }
+    },
+    "body": {
+      "kind": "Block",
+      "body": [
+{
+        "kind": "While",
+        "cond": {
+          "kind": "BinOp",
+          "op": "<",
+          "left": {
+            "kind": "Ident",
+            "name": "j"
+          },
+          "right": {
+            "kind": "IntLiteral",
+            "value": 10
+          }
+        },
+        "body": {
+          "kind": "Block",
+          "body": [
+{
+            "kind": "Assign",
+            "target": {
+              "kind": "Ident",
+              "name": "j"
+            },
+            "value": {
+              "kind": "BinOp",
+              "op": "+",
+              "left": {
+                "kind": "Ident",
+                "name": "j"
+              },
+              "right": {
+                "kind": "IntLiteral",
+                "value": 1
+              }
+            }
+          }
+        ]}
+      },
+{
+        "kind": "Assign",
+        "target": {
+          "kind": "Ident",
+          "name": "i"
+        },
+        "value": {
+          "kind": "BinOp",
+          "op": "+",
+          "left": {
+            "kind": "Ident",
+            "name": "i"
+          },
+          "right": {
+            "kind": "IntLiteral",
+            "value": 1
+          }
+        }
+      }
+    ]}
+  }
+]}

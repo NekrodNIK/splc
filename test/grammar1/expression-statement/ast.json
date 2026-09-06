@@ -1,0 +1,11 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "ExprStmt",
+    "value": {
+      "kind": "IntLiteral",
+      "value": 42
+    }
+  }
+]}

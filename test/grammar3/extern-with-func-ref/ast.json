@@ -1,0 +1,48 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "FuncDecl",
+    "name": "noop",
+    "params": [],
+    "body": {
+      "kind": "Block",
+      "body": [
+{
+        "kind": "Return",
+        "value": {
+          "kind": "IntLiteral",
+          "value": 0
+        }
+      }
+    ]}
+  },
+{
+    "kind": "ExternDecl",
+    "name": "foo",
+    "params": [{
+  "kind": "Ident",
+  "name": "x"
+}]
+  },
+{
+    "kind": "Declare",
+    "mut": "var",
+    "name": "a",
+    "init": {
+      "kind": "Call",
+      "callee": {
+        "kind": "Ident",
+        "name": "foo"
+      },
+      "args": [{
+  "kind": "Call",
+  "callee": {
+    "kind": "Ident",
+    "name": "noop"
+  },
+  "args": []
+}]
+    }
+  }
+]}

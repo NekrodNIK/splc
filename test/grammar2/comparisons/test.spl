@@ -1,0 +1,6 @@
+var cmp = 1 == 2;
+var cmp2 = 3 != 4;
+var cmp3 = 5 < 6;
+var cmp4 = 7 > 8;
+var cmp5 = 9 <= 10;
+var cmp6 = 11 >= 12;

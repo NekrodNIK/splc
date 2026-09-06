@@ -1,0 +1,19 @@
+struct Mixed {
+  a: Int8;
+  b: Int16;
+  c: Int32;
+  d: Int64;
+  e: Bool;
+  f: String;
+}
+
+var m: Mixed;
+m.a = 1;
+m.b = 2;
+m.c = 3;
+m.d = 4;
+m.e = true;
+m.f = "hi";
+var result: Int64;
+result = cast<Int64>(m.a) + cast<Int64>(m.b) + cast<Int64>(m.c) + m.d;
+return result;

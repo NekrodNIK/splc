@@ -1,0 +1,39 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "If",
+    "cond": {
+      "kind": "IntLiteral",
+      "value": 1
+    },
+    "then": {
+      "kind": "If",
+      "cond": {
+        "kind": "IntLiteral",
+        "value": 0
+      },
+      "then": {
+        "kind": "Return",
+        "value": {
+          "kind": "IntLiteral",
+          "value": 1
+        }
+      },
+      "else": {
+        "kind": "Return",
+        "value": {
+          "kind": "IntLiteral",
+          "value": 2
+        }
+      }
+    }
+  },
+{
+    "kind": "Return",
+    "value": {
+      "kind": "IntLiteral",
+      "value": 0
+    }
+  }
+]}

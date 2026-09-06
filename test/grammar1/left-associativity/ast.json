@@ -1,0 +1,27 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "Return",
+    "value": {
+      "kind": "BinOp",
+      "op": "-",
+      "left": {
+        "kind": "BinOp",
+        "op": "-",
+        "left": {
+          "kind": "IntLiteral",
+          "value": 10
+        },
+        "right": {
+          "kind": "IntLiteral",
+          "value": 5
+        }
+      },
+      "right": {
+        "kind": "IntLiteral",
+        "value": 2
+      }
+    }
+  }
+]}

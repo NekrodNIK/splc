@@ -1,0 +1,4 @@
+{
+  "stages": ["parser"],
+  "exit": "nonzero"
+}

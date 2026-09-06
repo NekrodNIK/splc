@@ -1,0 +1,11 @@
+struct Inner {
+    value: Int64;
+}
+struct Outer {
+    inner: Inner;
+    extra: Int64;
+}
+var o: Outer;
+o.inner.value = 42;
+o.extra = 7;
+return o.inner.value + o.extra;

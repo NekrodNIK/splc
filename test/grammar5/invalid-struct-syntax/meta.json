@@ -1,0 +1,8 @@
+{
+  "grammar": ">=5",
+  "exit": {
+    "parser": "nonzero",
+    "llvm": "nonzero",
+    "compiler": "nonzero"
+  }
+}

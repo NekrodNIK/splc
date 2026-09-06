@@ -1,0 +1,75 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "Declare",
+    "mut": "var",
+    "name": "x",
+    "init": {
+      "kind": "IntLiteral",
+      "value": 0
+    }
+  },
+{
+    "kind": "Declare",
+    "mut": "var",
+    "name": "y",
+    "init": {
+      "kind": "IntLiteral",
+      "value": 1
+    }
+  },
+{
+    "kind": "If",
+    "cond": {
+      "kind": "BinOp",
+      "op": "||",
+      "left": {
+        "kind": "BinOp",
+        "op": "!=",
+        "left": {
+          "kind": "Ident",
+          "name": "x"
+        },
+        "right": {
+          "kind": "IntLiteral",
+          "value": 0
+        }
+      },
+      "right": {
+        "kind": "BinOp",
+        "op": "!=",
+        "left": {
+          "kind": "Ident",
+          "name": "y"
+        },
+        "right": {
+          "kind": "IntLiteral",
+          "value": 0
+        }
+      }
+    },
+    "then": {
+      "kind": "Block",
+      "body": [
+{
+        "kind": "Return",
+        "value": {
+          "kind": "IntLiteral",
+          "value": 1
+        }
+      }
+    ]},
+    "else": {
+      "kind": "Block",
+      "body": [
+{
+        "kind": "Return",
+        "value": {
+          "kind": "IntLiteral",
+          "value": 0
+        }
+      }
+    ]}
+  }
+]}

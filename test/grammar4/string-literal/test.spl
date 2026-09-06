@@ -1,0 +1,3 @@
+val s: String = "hello";
+val msg: String = "world";
+return 0;

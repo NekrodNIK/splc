@@ -1,0 +1,45 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "FuncDecl",
+    "name": "double",
+    "params": [{
+  "kind": "Ident",
+  "name": "x"
+}],
+    "body": {
+      "kind": "Block",
+      "body": [
+{
+        "kind": "Return",
+        "value": {
+          "kind": "BinOp",
+          "op": "*",
+          "left": {
+            "kind": "Ident",
+            "name": "x"
+          },
+          "right": {
+            "kind": "IntLiteral",
+            "value": 2
+          }
+        }
+      }
+    ]}
+  },
+{
+    "kind": "Return",
+    "value": {
+      "kind": "Call",
+      "callee": {
+        "kind": "Ident",
+        "name": "double"
+      },
+      "args": [{
+  "kind": "IntLiteral",
+  "value": 21
+}]
+    }
+  }
+]}

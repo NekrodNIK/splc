@@ -1,0 +1,11 @@
+struct Point {
+  x: Int64;
+  y: Int64;
+}
+
+var pts: Point[2];
+pts[0].x = 1;
+pts[0].y = 2;
+pts[1].x = 3;
+pts[1].y = 4;
+return pts[0].x + pts[1].y;

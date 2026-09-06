@@ -1,0 +1,36 @@
+; ModuleID = 'spl'
+source_filename = "spl"
+
+define i64 @main() {
+entry:
+  %i = alloca i64, align 8
+  store i64 0, ptr %i, align 8
+  br label %while_header
+
+while_header:                                     ; preds = %ifmerge, %entry
+  %i1 = load i64, ptr %i, align 8
+  %cmptmp = icmp slt i64 %i1, 10
+  %zexttmp = zext i1 %cmptmp to i64
+  %whilecond = icmp ne i64 %zexttmp, 0
+  br i1 %whilecond, label %while_body, label %while_end
+
+while_body:                                       ; preds = %while_header
+  %i2 = load i64, ptr %i, align 8
+  %cmptmp3 = icmp eq i64 %i2, 5
+  %zexttmp4 = zext i1 %cmptmp3 to i64
+  %ifcond = icmp ne i64 %zexttmp4, 0
+  br i1 %ifcond, label %then, label %ifmerge
+
+while_end:                                        ; preds = %then, %while_header
+  ret i64 0
+
+then:                                             ; preds = %while_body
+  br label %while_end
+  br label %ifmerge
+
+ifmerge:                                          ; preds = %then, %while_body
+  %i5 = load i64, ptr %i, align 8
+  %addtmp = add i64 %i5, 1
+  store i64 %addtmp, ptr %i, align 8
+  br label %while_header
+}

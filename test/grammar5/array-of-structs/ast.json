@@ -1,0 +1,155 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "StructDecl",
+    "name": "Point",
+    "fields": [
+{
+      "kind": "Declare",
+      "mut": "val",
+      "type": "Int64",
+      "name": "x",
+      "init": null
+    },
+{
+      "kind": "Declare",
+      "mut": "val",
+      "type": "Int64",
+      "name": "y",
+      "init": null
+    }
+  ]},
+{
+    "kind": "Declare",
+    "mut": "var",
+    "type": "Array[2](Point)",
+    "name": "pts",
+    "init": null
+  },
+{
+    "kind": "Assign",
+    "target": {
+      "kind": "FieldAccess",
+      "base": {
+        "kind": "Subscript",
+        "base": {
+          "kind": "Ident",
+          "name": "pts"
+        },
+        "index": {
+          "kind": "IntLiteral",
+          "value": 0
+        }
+      },
+      "field": "x"
+    },
+    "value": {
+      "kind": "IntLiteral",
+      "value": 1
+    }
+  },
+{
+    "kind": "Assign",
+    "target": {
+      "kind": "FieldAccess",
+      "base": {
+        "kind": "Subscript",
+        "base": {
+          "kind": "Ident",
+          "name": "pts"
+        },
+        "index": {
+          "kind": "IntLiteral",
+          "value": 0
+        }
+      },
+      "field": "y"
+    },
+    "value": {
+      "kind": "IntLiteral",
+      "value": 2
+    }
+  },
+{
+    "kind": "Assign",
+    "target": {
+      "kind": "FieldAccess",
+      "base": {
+        "kind": "Subscript",
+        "base": {
+          "kind": "Ident",
+          "name": "pts"
+        },
+        "index": {
+          "kind": "IntLiteral",
+          "value": 1
+        }
+      },
+      "field": "x"
+    },
+    "value": {
+      "kind": "IntLiteral",
+      "value": 3
+    }
+  },
+{
+    "kind": "Assign",
+    "target": {
+      "kind": "FieldAccess",
+      "base": {
+        "kind": "Subscript",
+        "base": {
+          "kind": "Ident",
+          "name": "pts"
+        },
+        "index": {
+          "kind": "IntLiteral",
+          "value": 1
+        }
+      },
+      "field": "y"
+    },
+    "value": {
+      "kind": "IntLiteral",
+      "value": 4
+    }
+  },
+{
+    "kind": "Return",
+    "value": {
+      "kind": "BinOp",
+      "op": "+",
+      "left": {
+        "kind": "FieldAccess",
+        "base": {
+          "kind": "Subscript",
+          "base": {
+            "kind": "Ident",
+            "name": "pts"
+          },
+          "index": {
+            "kind": "IntLiteral",
+            "value": 0
+          }
+        },
+        "field": "x"
+      },
+      "right": {
+        "kind": "FieldAccess",
+        "base": {
+          "kind": "Subscript",
+          "base": {
+            "kind": "Ident",
+            "name": "pts"
+          },
+          "index": {
+            "kind": "IntLiteral",
+            "value": 1
+          }
+        },
+        "field": "y"
+      }
+    }
+  }
+]}

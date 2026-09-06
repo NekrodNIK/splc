@@ -1,0 +1,43 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "FuncDecl",
+    "name": "add",
+    "params": [{
+  "kind": "Ident",
+  "name": "a"
+}, {
+  "kind": "Ident",
+  "name": "b"
+}],
+    "body": {
+      "kind": "Block",
+      "body": [
+{
+        "kind": "Declare",
+        "mut": "var",
+        "name": "result",
+        "init": {
+          "kind": "BinOp",
+          "op": "+",
+          "left": {
+            "kind": "Ident",
+            "name": "a"
+          },
+          "right": {
+            "kind": "Ident",
+            "name": "b"
+          }
+        }
+      },
+{
+        "kind": "Return",
+        "value": {
+          "kind": "Ident",
+          "name": "result"
+        }
+      }
+    ]}
+  }
+]}

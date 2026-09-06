@@ -1,0 +1,11 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "Return",
+    "value": {
+      "kind": "Error",
+      "message": "unexpected token 'SEMI'"
+    }
+  }
+]}

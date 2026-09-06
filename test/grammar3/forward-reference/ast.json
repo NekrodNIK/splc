@@ -1,0 +1,46 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "FuncDecl",
+    "name": "main",
+    "params": [],
+    "body": {
+      "kind": "Block",
+      "body": [
+{
+        "kind": "Return",
+        "value": {
+          "kind": "Call",
+          "callee": {
+            "kind": "Ident",
+            "name": "foo"
+          },
+          "args": [{
+  "kind": "IntLiteral",
+  "value": 42
+}]
+        }
+      }
+    ]}
+  },
+{
+    "kind": "FuncDecl",
+    "name": "foo",
+    "params": [{
+  "kind": "Ident",
+  "name": "x"
+}],
+    "body": {
+      "kind": "Block",
+      "body": [
+{
+        "kind": "Return",
+        "value": {
+          "kind": "Ident",
+          "name": "x"
+        }
+      }
+    ]}
+  }
+]}

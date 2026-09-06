@@ -1,0 +1,62 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "ExternDecl",
+    "name": "putchar",
+    "returnType": "Int64",
+    "params": [{
+  "kind": "Param",
+  "name": "c",
+  "type": "Int8"
+}]
+  },
+{
+    "kind": "ExternDecl",
+    "name": "exit",
+    "returnType": "Int64",
+    "params": [{
+  "kind": "Param",
+  "name": "code",
+  "type": "Int64"
+}]
+  },
+{
+    "kind": "Declare",
+    "mut": "val",
+    "type": "Int64",
+    "name": "r",
+    "init": {
+      "kind": "Call",
+      "callee": {
+        "kind": "Ident",
+        "name": "putchar"
+      },
+      "args": [{
+  "kind": "Cast",
+  "type": "Int8",
+  "value": {
+    "kind": "IntLiteral",
+    "value": 65
+  }
+}]
+    }
+  },
+{
+    "kind": "Declare",
+    "mut": "var",
+    "type": "Int64",
+    "name": "code",
+    "init": {
+      "kind": "IntLiteral",
+      "value": 0
+    }
+  },
+{
+    "kind": "Return",
+    "value": {
+      "kind": "Ident",
+      "name": "code"
+    }
+  }
+]}

@@ -1,0 +1,2 @@
+extern def foo(x);
+extern def bar(y, z);

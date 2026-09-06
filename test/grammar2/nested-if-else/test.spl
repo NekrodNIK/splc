@@ -1,0 +1,12 @@
+var x = 1;
+var y = 0;
+var z = 0;
+if (x) {
+    if (y) {
+        z = 1;
+    } else {
+        z = 2;
+    }
+} else {
+    z = 3;
+}

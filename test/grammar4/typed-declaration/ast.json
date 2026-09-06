@@ -1,0 +1,49 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "Declare",
+    "mut": "val",
+    "type": "Int64",
+    "name": "x",
+    "init": {
+      "kind": "IntLiteral",
+      "value": 42
+    }
+  },
+{
+    "kind": "Declare",
+    "mut": "val",
+    "type": "Int64",
+    "name": "y",
+    "init": {
+      "kind": "IntLiteral",
+      "value": 10
+    }
+  },
+{
+    "kind": "Declare",
+    "mut": "var",
+    "type": "Int64",
+    "name": "sum",
+    "init": {
+      "kind": "BinOp",
+      "op": "+",
+      "left": {
+        "kind": "Ident",
+        "name": "x"
+      },
+      "right": {
+        "kind": "Ident",
+        "name": "y"
+      }
+    }
+  },
+{
+    "kind": "Return",
+    "value": {
+      "kind": "Ident",
+      "name": "sum"
+    }
+  }
+]}

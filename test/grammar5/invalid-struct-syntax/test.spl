@@ -1,0 +1,4 @@
+struct Point {
+    x: Int64;
+    y: Int64
+return 0;

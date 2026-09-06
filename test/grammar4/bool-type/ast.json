@@ -1,0 +1,49 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "Declare",
+    "mut": "val",
+    "type": "Bool",
+    "name": "a",
+    "init": {
+      "kind": "BoolLiteral",
+      "value": true
+    }
+  },
+{
+    "kind": "Declare",
+    "mut": "val",
+    "type": "Bool",
+    "name": "b",
+    "init": {
+      "kind": "BoolLiteral",
+      "value": false
+    }
+  },
+{
+    "kind": "Declare",
+    "mut": "val",
+    "type": "Bool",
+    "name": "cmp",
+    "init": {
+      "kind": "BinOp",
+      "op": "==",
+      "left": {
+        "kind": "IntLiteral",
+        "value": 1
+      },
+      "right": {
+        "kind": "IntLiteral",
+        "value": 1
+      }
+    }
+  },
+{
+    "kind": "Return",
+    "value": {
+      "kind": "IntLiteral",
+      "value": 0
+    }
+  }
+]}

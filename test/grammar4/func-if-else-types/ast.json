@@ -1,0 +1,86 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "FuncDecl",
+    "name": "max",
+    "returnType": "Int64",
+    "params": [{
+  "kind": "Param",
+  "name": "a",
+  "type": "Int64"
+}, {
+  "kind": "Param",
+  "name": "b",
+  "type": "Int64"
+}],
+    "body": {
+      "kind": "Block",
+      "body": [
+{
+        "kind": "If",
+        "cond": {
+          "kind": "BinOp",
+          "op": ">",
+          "left": {
+            "kind": "Ident",
+            "name": "a"
+          },
+          "right": {
+            "kind": "Ident",
+            "name": "b"
+          }
+        },
+        "then": {
+          "kind": "Block",
+          "body": [
+{
+            "kind": "Return",
+            "value": {
+              "kind": "Ident",
+              "name": "a"
+            }
+          }
+        ]},
+        "else": {
+          "kind": "Block",
+          "body": [
+{
+            "kind": "Return",
+            "value": {
+              "kind": "Ident",
+              "name": "b"
+            }
+          }
+        ]}
+      }
+    ]}
+  },
+{
+    "kind": "Declare",
+    "mut": "val",
+    "type": "Int64",
+    "name": "m",
+    "init": {
+      "kind": "Call",
+      "callee": {
+        "kind": "Ident",
+        "name": "max"
+      },
+      "args": [{
+  "kind": "IntLiteral",
+  "value": 7
+}, {
+  "kind": "IntLiteral",
+  "value": 12
+}]
+    }
+  },
+{
+    "kind": "Return",
+    "value": {
+      "kind": "Ident",
+      "name": "m"
+    }
+  }
+]}

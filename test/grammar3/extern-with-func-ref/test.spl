@@ -1,0 +1,7 @@
+def noop() {
+    return 0;
+}
+
+extern def foo(x);
+
+var a = foo(noop());

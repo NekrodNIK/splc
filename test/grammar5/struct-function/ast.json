@@ -1,0 +1,146 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "StructDecl",
+    "name": "Point",
+    "fields": [
+{
+      "kind": "Declare",
+      "mut": "val",
+      "type": "Int64",
+      "name": "x",
+      "init": null
+    },
+{
+      "kind": "Declare",
+      "mut": "val",
+      "type": "Int64",
+      "name": "y",
+      "init": null
+    }
+  ]},
+{
+    "kind": "FuncDecl",
+    "name": "makePoint",
+    "returnType": "Point",
+    "params": [{
+  "kind": "Param",
+  "name": "px",
+  "type": "Int64"
+}, {
+  "kind": "Param",
+  "name": "py",
+  "type": "Int64"
+}],
+    "body": {
+      "kind": "Block",
+      "body": [
+{
+        "kind": "Declare",
+        "mut": "var",
+        "type": "Point",
+        "name": "p",
+        "init": null
+      },
+{
+        "kind": "Assign",
+        "target": {
+          "kind": "FieldAccess",
+          "base": {
+            "kind": "Ident",
+            "name": "p"
+          },
+          "field": "x"
+        },
+        "value": {
+          "kind": "Ident",
+          "name": "px"
+        }
+      },
+{
+        "kind": "Assign",
+        "target": {
+          "kind": "FieldAccess",
+          "base": {
+            "kind": "Ident",
+            "name": "p"
+          },
+          "field": "y"
+        },
+        "value": {
+          "kind": "Ident",
+          "name": "py"
+        }
+      },
+{
+        "kind": "Return",
+        "value": {
+          "kind": "Ident",
+          "name": "p"
+        }
+      }
+    ]}
+  },
+{
+    "kind": "Declare",
+    "mut": "var",
+    "type": "Point",
+    "name": "pt",
+    "init": null
+  },
+{
+    "kind": "Assign",
+    "target": {
+      "kind": "Ident",
+      "name": "pt"
+    },
+    "value": {
+      "kind": "Call",
+      "callee": {
+        "kind": "Ident",
+        "name": "makePoint"
+      },
+      "args": [{
+  "kind": "IntLiteral",
+  "value": 3
+}, {
+  "kind": "IntLiteral",
+  "value": 4
+}]
+    }
+  },
+{
+    "kind": "Declare",
+    "mut": "val",
+    "type": "Int64",
+    "name": "result",
+    "init": {
+      "kind": "BinOp",
+      "op": "+",
+      "left": {
+        "kind": "FieldAccess",
+        "base": {
+          "kind": "Ident",
+          "name": "pt"
+        },
+        "field": "x"
+      },
+      "right": {
+        "kind": "FieldAccess",
+        "base": {
+          "kind": "Ident",
+          "name": "pt"
+        },
+        "field": "y"
+      }
+    }
+  },
+{
+    "kind": "Return",
+    "value": {
+      "kind": "Ident",
+      "name": "result"
+    }
+  }
+]}

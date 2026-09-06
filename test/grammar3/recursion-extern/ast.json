@@ -1,0 +1,137 @@
+{
+  "kind": "Program",
+  "body": [
+{
+    "kind": "FuncDecl",
+    "name": "fib",
+    "params": [{
+  "kind": "Ident",
+  "name": "n"
+}],
+    "body": {
+      "kind": "Block",
+      "body": [
+{
+        "kind": "If",
+        "cond": {
+          "kind": "BinOp",
+          "op": "<=",
+          "left": {
+            "kind": "Ident",
+            "name": "n"
+          },
+          "right": {
+            "kind": "IntLiteral",
+            "value": 1
+          }
+        },
+        "then": {
+          "kind": "Block",
+          "body": [
+{
+            "kind": "Return",
+            "value": {
+              "kind": "Ident",
+              "name": "n"
+            }
+          }
+        ]}
+      },
+{
+        "kind": "Return",
+        "value": {
+          "kind": "BinOp",
+          "op": "+",
+          "left": {
+            "kind": "Call",
+            "callee": {
+              "kind": "Ident",
+              "name": "fib"
+            },
+            "args": [{
+  "kind": "BinOp",
+  "op": "-",
+  "left": {
+    "kind": "Ident",
+    "name": "n"
+  },
+  "right": {
+    "kind": "IntLiteral",
+    "value": 1
+  }
+}]
+          },
+          "right": {
+            "kind": "Call",
+            "callee": {
+              "kind": "Ident",
+              "name": "fib"
+            },
+            "args": [{
+  "kind": "BinOp",
+  "op": "-",
+  "left": {
+    "kind": "Ident",
+    "name": "n"
+  },
+  "right": {
+    "kind": "IntLiteral",
+    "value": 2
+  }
+}]
+          }
+        }
+      }
+    ]}
+  },
+{
+    "kind": "ExternDecl",
+    "name": "getchar",
+    "params": []
+  },
+{
+    "kind": "FuncDecl",
+    "name": "main",
+    "params": [],
+    "body": {
+      "kind": "Block",
+      "body": [
+{
+        "kind": "Declare",
+        "mut": "var",
+        "name": "result",
+        "init": {
+          "kind": "Call",
+          "callee": {
+            "kind": "Ident",
+            "name": "fib"
+          },
+          "args": [{
+  "kind": "IntLiteral",
+  "value": 10
+}]
+        }
+      },
+{
+        "kind": "Declare",
+        "mut": "var",
+        "name": "c",
+        "init": {
+          "kind": "Call",
+          "callee": {
+            "kind": "Ident",
+            "name": "getchar"
+          },
+          "args": []
+        }
+      },
+{
+        "kind": "Return",
+        "value": {
+          "kind": "Ident",
+          "name": "result"
+        }
+      }
+    ]}
+  }
+]}
