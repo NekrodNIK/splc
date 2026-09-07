@@ -89,9 +89,6 @@ class Config:
             if not isinstance(raw_versions, list) or not all(isinstance(v, int) for v in raw_versions):
                 raise StepError(f"config {path}: 'versions' must be a list of integers")
             self.versions = [str(v) for v in raw_versions]
-        else:
-            # Fall back to fuzz grammar keys if versions not specified
-            self.versions = sorted(grammar_map.keys(), key=int)
         self.out_dir = os.path.abspath(resolve(
             str(raw.get("out_dir", DEFAULT_OUT_DIR)), {"{root}": REPO_ROOT}))
         llvm_dis = raw.get("llvm_dis", "llvm-dis")
@@ -102,6 +99,9 @@ class Config:
         grammar_map = raw_fuzz.get("grammar") or {}
         if not isinstance(grammar_map, dict):
             raise StepError(f"config {path}: 'fuzz.grammar' must be an object")
+        # Fall back to fuzz grammar keys if versions not specified
+        if not hasattr(self, 'versions'):
+            self.versions = sorted(grammar_map.keys(), key=int)
         exit_map = raw_fuzz.get("exit") or {}
         if not isinstance(exit_map, dict):
             raise StepError(f"config {path}: 'fuzz.exit' must be an object")
