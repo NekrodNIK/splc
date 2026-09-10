@@ -1,0 +1,5 @@
+(library
+ (name spl)
+ (libraries yojson)
+ (preprocess
+  (pps ppx_deriving.show ppx_string)))
