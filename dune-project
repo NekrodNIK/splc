@@ -14,5 +14,6 @@
   ppx_string
   ppx_deriving
   yojson
+  cmdliner
   (ocaml-lsp-server :with-dev-setup)
   (ocamlformat :with-dev-setup)))

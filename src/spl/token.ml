@@ -1,10 +1,3 @@
-type lexer_error = UnclosedMultilineComment | UnknownToken of string
-[@@deriving show]
-
-let lexer_error_to_string = function
-  | UnclosedMultilineComment -> "Unclosed multiline comment"
-  | UnknownToken s -> s
-
 type t =
   | Ident of string
   | Number of int
@@ -19,7 +12,7 @@ type t =
   | SemiColon
   | LParen
   | RParen
-  | Error of lexer_error
+  | Error of Errors.Lexer.t
   | Eof
 [@@deriving show]
 
@@ -38,7 +31,7 @@ let to_string token : string =
   | SemiColon -> ";"
   | LParen -> "("
   | RParen -> ")"
-  | Error err -> lexer_error_to_string err
+  | Error err -> Errors.Lexer.to_string err
   | Eof -> ""
 
 let to_json token : Yojson.Basic.t =
