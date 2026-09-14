@@ -23,3 +23,8 @@ Thumbs.db
 _opam/
 target/
 _build/
+
+
+# Added by cargo
+
+/target
