@@ -10,8 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # Add grammar versions you have implemented (e.g. [1, 2, 3, 4, 5])
         grammar: [1]
+        stage: ["lexer"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
