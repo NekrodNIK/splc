@@ -54,12 +54,13 @@ let is_non_digit ch = Char.Ascii.is_letter ch || ch = '_'
 let is_alphanum = Char.Ascii.is_alphanum
 let is_whitespace = function ' ' | '\t' | '\r' | '\n' -> true | _ -> false
 
-let rec skip_multiline_comment st : unit res =
+let rec skip_multiline_comment st start_loc : unit res =
   match peek_string st 2 with
   | "*/" -> eat_n st 2
+  | "" -> Error (At (Token.Error UnterminatedMultilineComment, start_loc))
   | _ ->
       let* _ = eat st in
-      skip_multiline_comment st
+      skip_multiline_comment st start_loc
 
 let rec skip_trivia st : unit res =
   let* _ = eat_while st is_whitespace in
@@ -68,8 +69,9 @@ let rec skip_trivia st : unit res =
       let* _ = eat_while st (( <> ) '\n') in
       skip_trivia st
   | "/*" ->
+      let start_loc = !st.loc in
       let* _ = eat_n st 2 in
-      let* _ = skip_multiline_comment st in
+      let* _ = skip_multiline_comment st start_loc in
       skip_trivia st
   | _ -> Ok ()
 
@@ -101,7 +103,7 @@ let read_token st : Token.t Located.t res =
     | '/' -> single Token.Slash
     | '*' -> single Token.Asterisk
     | ';' -> single Token.SemiColon
-    | '=' -> single Token.Equal
+    | '=' -> single Token.Assign
     | '0' -> single (Token.Number 0)
     | ch when is_digit ch -> read_number st
     | ch when is_non_digit ch -> read_ident st

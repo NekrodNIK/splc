@@ -3,7 +3,7 @@ type t =
   | Number of int
   | Val
   | Var
-  | Equal
+  | Assign
   | Return
   | Plus
   | Minus
@@ -22,7 +22,7 @@ let to_string token : string =
   | Number x -> Int.to_string x
   | Val -> "val"
   | Var -> "var"
-  | Equal -> "="
+  | Assign -> "="
   | Return -> "return"
   | Plus -> "+"
   | Minus -> "-"
@@ -38,16 +38,16 @@ let to_json token : Yojson.Basic.t =
   let kind =
     match token with
     | Ident _ -> "IDENT"
-    | Number _ -> "NUM"
+    | Number _ -> "INT"
     | Val -> "VAL"
     | Var -> "VAR"
-    | Equal -> "EQUAL"
+    | Assign -> "ASSIGN"
     | Return -> "RETURN"
     | Plus -> "PLUS"
     | Minus -> "MINUS"
-    | Slash -> "SLASH"
-    | Asterisk -> "ASTERISK"
-    | SemiColon -> "SEMICOLON"
+    | Slash -> "DIV"
+    | Asterisk -> "MULT"
+    | SemiColon -> "SEMI"
     | LParen -> "LPAREN"
     | RParen -> "RPAREN"
     | Error err -> "ERROR"
