@@ -1,4 +1,6 @@
 (executable
  (public_name splc)
  (name driver)
- (libraries spl))
+ (libraries cmdliner spl)
+ (preprocess
+  (pps ppx_deriving.show ppx_string)))

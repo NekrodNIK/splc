@@ -1,62 +1,31 @@
-let usage_msg = "Usage: splc [options] [file].."
+open Cmdliner
+open Cmdliner.Term.Syntax
 
-module CmdArgs = struct
-  let grammar_ver = 1
-  let srcs = ref []
-  let report_lexer = ref None
-end
+let grammar_ver = 1
 
-let exitf =
-  Printf.ksprintf (fun s ->
-      prerr_string s;
-      exit 1)
-
-let grammar_check x =
-  if x != CmdArgs.grammar_ver then exitf "unsupported grammar version"
-
-let speclist =
-  [
-    ("-g", Arg.Int grammar_check, "grammar version");
-    ( "-t",
-      Arg.String (fun s -> CmdArgs.report_lexer := Some s),
-      "enable lexer report to file" );
-  ]
-
-let add_src path =
-  let text = In_channel.with_open_text path In_channel.input_all in
-  CmdArgs.srcs := text :: !CmdArgs.srcs
-
-let report_lexer token_gens path =
-  let rec unfold_until_eof f =
-    match f () with
-    | Spl.Position.Located (Spl.Token.Eof, _) -> []
-    | x -> x :: unfold_until_eof f
+let splc src_path lr =
+  let lex =
+    Spl.Lexer.from_string
+    @@ In_channel.with_open_text src_path In_channel.input_all
   in
 
-  Out_channel.with_open_bin path (fun oc ->
-      List.iter
-        (fun gen ->
-          let jsons = `List(
-            List.map
-              (fun p -> Spl.Position.located_to_json p Spl.Token.to_json)
-              (unfold_until_eof gen))
-          in
-            Out_channel.output_string oc (Yojson.Basic.pretty_to_string jsons);
-            Out_channel.output_char oc '\n')
-        token_gens)
+  match lr with
+  | Some lr_path ->
+      Out_channel.with_open_text lr_path
+      @@ (Fun.flip Yojson.Basic.pretty_to_channel) (Spl.Report.report_lexer lex)
+  | _ -> ()
 
-let () =
-  Arg.parse speclist add_src usage_msg;
-  if !CmdArgs.srcs == [] then exitf "no input files";
-
-  let token_gens =
-    List.map
-      (fun s ->
-        let lexbuf = Spl.Lexer.from_string s in
-        fun () -> Spl.Lexer.next_token lexbuf)
-      !CmdArgs.srcs
+let cmd =
+  Cmd.v (Cmd.info "splc")
+  @@
+  let+ src_path = Arg.(required & pos 0 (some file) None & info [] ~docv:"FILE")
+  and+ lr = Arg.(value & opt (some path) None & info [ "t" ])
+  and+ _ =
+    Arg.(
+      value
+      & opt (enum [ ([%string "%{grammar_ver#Int}"], grammar_ver) ]) grammar_ver
+      & info [ "g" ])
   in
+  splc src_path lr
 
-  match !CmdArgs.report_lexer with
-  | Some path -> report_lexer token_gens path
-  | None -> ()
+let () = exit (Cmd.eval cmd)
