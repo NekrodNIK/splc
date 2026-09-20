@@ -11,9 +11,13 @@ let splc src_path lr =
 
   match lr with
   | Some lr_path ->
-      Out_channel.with_open_text lr_path
-      @@ (Fun.flip Yojson.Basic.pretty_to_channel) (Spl.Report.report_lexer lex)
-  | _ -> ()
+      let report, error_flag = Spl.Report.report_lexer lex in
+      let () =
+        Out_channel.with_open_text lr_path
+        @@ (Fun.flip Yojson.Basic.pretty_to_channel) report
+      in
+      if error_flag then Cmd.Exit.some_error else Cmd.Exit.ok
+  | _ -> Cmd.Exit.ok
 
 let cmd =
   Cmd.v (Cmd.info "splc")
@@ -28,4 +32,4 @@ let cmd =
   in
   splc src_path lr
 
-let () = exit (Cmd.eval cmd)
+let () = exit (Cmd.eval' cmd)
