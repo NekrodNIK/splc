@@ -1,6 +1,6 @@
 module Lexer = struct
-  type t = UnknownToken of string [@@deriving show]
+  type t = UnknownToken of char [@@deriving show]
 
   let to_string = function
-    | UnknownToken s -> s
+    | UnknownToken s -> String.of_char s
 end
