@@ -51,7 +51,6 @@ let eat_while st pred : string res =
 
 let is_digit = Char.Ascii.is_digit
 let is_non_digit ch = Char.Ascii.is_letter ch || ch = '_'
-let is_alphanum = Char.Ascii.is_alphanum
 let is_whitespace = function ' ' | '\t' | '\r' | '\n' -> true | _ -> false
 
 let rec skip_multiline_comment st start_loc : unit res =
@@ -80,7 +79,7 @@ let read_number st : Token.t res =
   Token.Number (int_of_string str)
 
 let read_ident st : Token.t res =
-  let+ str = eat_while st is_alphanum in
+  let+ str = eat_while st (fun ch -> is_digit ch || is_non_digit ch) in
   match str with
   | "val" -> Token.Val
   | "var" -> Token.Var
