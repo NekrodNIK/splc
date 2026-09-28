@@ -3,4 +3,4 @@ type t = UnterminatedMultilineComment | UnknownToken of char
 
 let to_string = function
   | UnterminatedMultilineComment -> "Unterminated multi-line comment"
-  | UnknownToken ch -> [%string "Unknown token %{String.of_char ch}"]
+  | UnknownToken ch -> [%string "Unknown token '%{String.of_char ch}'"]
