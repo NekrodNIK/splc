@@ -36,7 +36,7 @@
     },
     {
       "line": 3,
-      "column": 5,
+      "column": 7,
       "kind": "Assign",
       "elems": [
       {
