@@ -12,7 +12,7 @@ type t =
   | SemiColon
   | LParen
   | RParen
-  | Error of Errors.Lexer.t
+  | Error of Errors.t
   | Eof
 [@@deriving show]
 
@@ -31,7 +31,7 @@ let to_string token : string =
   | SemiColon -> ";"
   | LParen -> "("
   | RParen -> ")"
-  | Error err -> Errors.Lexer.to_string err
+  | Error err -> Errors.to_string err
   | Eof -> ""
 
 let to_json token : Yojson.Basic.t =
