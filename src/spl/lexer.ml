@@ -76,7 +76,7 @@ let rec skip_trivia st : unit res =
 
 let read_number st : Token.t res =
   let+ str = eat_while st is_digit in
-  Token.Number (int_of_string str)
+  Token.Number str
 
 let read_ident st : Token.t res =
   let+ str = eat_while st (fun ch -> is_digit ch || is_non_digit ch) in
@@ -103,7 +103,7 @@ let read_token st : Token.t Located.t res =
     | '*' -> single Token.Asterisk
     | ';' -> single Token.SemiColon
     | '=' -> single Token.Assign
-    | '0' -> single (Token.Number 0)
+    | '0' -> single (Token.Number "0")
     | ch when is_digit ch -> read_number st
     | ch when is_non_digit ch -> read_ident st
     | ch -> single_err (Token.Error (UnknownToken ch))

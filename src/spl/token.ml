@@ -1,6 +1,6 @@
 type t =
   | Ident of string
-  | Number of int
+  | Number of string
   | Val
   | Var
   | Assign
@@ -19,7 +19,7 @@ type t =
 let to_string token : string =
   match token with
   | Ident x -> x
-  | Number x -> Int.to_string x
+  | Number x -> x
   | Val -> "val"
   | Var -> "var"
   | Assign -> "="
