@@ -9,7 +9,7 @@ type 'a res = ('a, Token.t Located.t) result
 let peek st : char res =
   let { src; loc } = !st in
   if loc.offset < String.length src then Ok src.[loc.offset]
-  else Error (At (Eof, loc))
+  else Error (At (loc, Eof))
 
 let peek_string st upper : string =
   let { src; loc } = !st in
@@ -56,7 +56,7 @@ let is_whitespace = function ' ' | '\t' | '\r' | '\n' -> true | _ -> false
 let rec skip_multiline_comment st start_loc : unit res =
   match peek_string st 2 with
   | "*/" -> eat_n st 2
-  | "" -> Error (At (Token.Error UnterminatedMultilineComment, start_loc))
+  | "" -> Error (At (start_loc, Token.Error UnterminatedMultilineComment))
   | _ ->
       let* _ = eat st in
       skip_multiline_comment st start_loc
@@ -91,7 +91,7 @@ let read_token st : Token.t Located.t res =
   let* ch = peek st in
 
   let single tok = Result.map (fun _ -> tok) (eat st)
-  and single_err tok = Result.bind (eat st) (fun _ -> Error (At (tok, loc))) in
+  and single_err tok = Result.bind (eat st) (fun _ -> Error (At (loc, tok))) in
 
   let token =
     match ch with
@@ -108,7 +108,7 @@ let read_token st : Token.t Located.t res =
     | ch when is_non_digit ch -> read_ident st
     | ch -> single_err (Token.Error (UnknownToken ch))
   in
-  Result.map (fun x -> Located.At (x, loc)) token
+  Result.map (fun x -> Located.At (loc, x)) token
 
 let next_token st =
   let st' = ref st in
@@ -116,4 +116,12 @@ let next_token st =
     let* _ = skip_trivia st' in
     read_token st'
   in
-  match result with Ok token | Error token -> (!st', token)
+  match result with Ok token | Error token -> (token, !st')
+
+let to_list st =
+  let rec unfold acc st =
+    let cur, st' = next_token st in
+    let acc' = cur :: acc in
+    match Located.get cur with Eof -> acc' | _ -> unfold acc' st'
+  in
+  unfold [] st
