@@ -21,16 +21,19 @@ let splc src_path lr pr =
     | _ -> Cmd.Exit.ok
   in
 
-  let () =
+  let result2 =
     match pr with
     | Some pr_path ->
-        let report = Spl.Report.report_parser lex in
-        Out_channel.with_open_text pr_path
-        @@ (Fun.flip Yojson.Basic.pretty_to_channel) report
-    | _ -> ()
+        let report, error_flag = Spl.Report.report_parser lex in
+        let () =
+          Out_channel.with_open_text pr_path
+          @@ (Fun.flip Yojson.Basic.pretty_to_channel) report
+        in
+        if error_flag then Cmd.Exit.some_error else Cmd.Exit.ok
+    | _ -> Cmd.Exit.ok
   in
-
-  result
+  
+  if result == Cmd.Exit.ok then result2 else result
 
 let cmd =
   Cmd.v (Cmd.info "splc")

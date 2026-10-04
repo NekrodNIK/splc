@@ -1,1 +1,1 @@
-val parse : Lexer.t -> string Syntax.t Located.t
+val parse : Lexer.t -> bool * string Syntax.t Located.t

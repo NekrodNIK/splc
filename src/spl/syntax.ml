@@ -51,21 +51,25 @@ let rec expr_to_json (id_to_string : 'id -> string) (ex : 'id expr) =
 
 let decl_to_json (id_to_string : 'id -> string) (de : 'id decl) =
   let nested_expr = Located.to_json (expr_to_json id_to_string) in
+  let nested_ident = Located.to_json (fun _ -> pack_node "Ident" [] "") in
   match de with
-  | ValDecl (id, ex) -> pack_node "Declare" [ nested_expr ex ] "Val"
-  | VarDecl (id, ex) -> pack_node "Declare" [ nested_expr ex ] "Var"
+  | ValDecl (id, ex) ->
+      pack_node "Declare" [ nested_ident id; nested_expr ex ] "Val"
+  | VarDecl (id, ex) ->
+      pack_node "Declare" [ nested_ident id; nested_expr ex ] "Var"
   | ErrorDecl err ->
       Located.to_json (fun x -> pack_node "Error" [] (Errors.to_string x)) err
 
 let stmt_to_json (id_to_string : 'id -> string) (st : 'id stmt) =
   let nested_expr = Located.to_json (expr_to_json id_to_string)
   and nested_decl = Located.to_json (decl_to_json id_to_string) in
+  let nested_ident = Located.to_json (fun _ -> pack_node "Ident" [] "") in
   match st with
   | ExprStmt ex -> nested_expr ex
   | ReturnStmt ex -> pack_node "Return" [ nested_expr ex ] ""
   | DeclStmt de -> nested_decl de
-  | AssignStmt (At (_, id), ex) ->
-      pack_node "Assign" [ nested_expr ex ] (id_to_string id)
+  | AssignStmt (id, ex) ->
+      pack_node "Assign" [ nested_ident id; nested_expr ex ] ""
   | ErrorStmt err ->
       Located.to_json (fun x -> pack_node "Error" [] (Errors.to_string x)) err
 
