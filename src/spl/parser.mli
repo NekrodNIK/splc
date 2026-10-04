@@ -1,1 +1,1 @@
-val parse : Token.t Located.t list -> string Syntax.t
+val parse : Lexer.t -> string Syntax.t Located.t

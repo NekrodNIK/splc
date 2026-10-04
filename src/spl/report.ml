@@ -15,3 +15,7 @@ let report_lexer (lex : Lexer.t) : Yojson.Basic.t * bool =
   in
   let l, f = loop [] lex false in
   (`List (List.rev l), f)
+
+let report_parser (lex : Lexer.t) : Yojson.Basic.t =
+  let ast = Parser.parse lex in
+  Located.to_json (Syntax.to_json Fun.id) ast

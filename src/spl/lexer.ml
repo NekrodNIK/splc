@@ -117,11 +117,3 @@ let next_token st =
     read_token st'
   in
   match result with Ok token | Error token -> (token, !st')
-
-let to_list st =
-  let rec unfold acc st =
-    let cur, st' = next_token st in
-    let acc' = cur :: acc in
-    match Located.get cur with Eof -> acc' | _ -> unfold acc' st'
-  in
-  unfold [] st
