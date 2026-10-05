@@ -1,3 +1,5 @@
+(* TODO: refactor it *)
+
 let report_lexer (lex : Lexer.t) : Yojson.Basic.t * bool =
   let rec loop acc lex error_flag =
     let located_token, lex' = Lexer.next_token lex in
