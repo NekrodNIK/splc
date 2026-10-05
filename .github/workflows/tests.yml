@@ -11,7 +11,7 @@ jobs:
     strategy:
       matrix:
         grammar: [1]
-        stage: ["lexer"]
+        stage: ["lexer", "parser"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
