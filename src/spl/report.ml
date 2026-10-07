@@ -1,4 +1,32 @@
-(* TODO: refactor it *)
+let located_to_json inner_to_json (loc : 'a Located.t) =
+  let (At (loc, inner)) = loc in
+  Yojson.Basic.Util.combine (inner_to_json inner)
+  @@ `Assoc [ ("line", `Int loc.line); ("column", `Int loc.col) ]
+
+module TokenReport = struct
+  let to_json (token : Token.t) : Yojson.Basic.t =
+    let kind =
+      match token with
+      | Ident _ -> "IDENT"
+      | Number _ -> "INT"
+      | Val -> "VAL"
+      | Var -> "VAR"
+      | Assign -> "ASSIGN"
+      | Return -> "RETURN"
+      | Plus -> "PLUS"
+      | Minus -> "MINUS"
+      | Slash -> "DIV"
+      | Asterisk -> "MULT"
+      | SemiColon -> "SEMI"
+      | LParen -> "LPAREN"
+      | RParen -> "RPAREN"
+      | Error err -> "ERROR"
+      | Eof -> "EOF"
+    in
+    `Assoc
+      [ ("kind", `String kind); ("value", `String (Token.to_string token)) ]
+end
+
 module SyntaxReport = struct
   let pack_node ?(comment = "") kind elems =
     let node = [ ("kind", `String kind); ("elems", `List elems) ] in
@@ -8,10 +36,10 @@ module SyntaxReport = struct
       | _ -> node @ [ ("comment", `String comment) ])
 
   let lid_to_json f =
-    Located.to_json (fun id -> pack_node "Ident" [] ~comment:(f id))
+    located_to_json (fun id -> pack_node "Ident" [] ~comment:(f id))
 
   let lerror_to_json =
-    Located.to_json (fun err ->
+    located_to_json (fun err ->
         pack_node "Error" [] ~comment:(Errors.to_string err))
 
   let rec expr_to_json id_to_str (expr : 'id Syntax.expr) =
@@ -28,8 +56,6 @@ module SyntaxReport = struct
     | IntLitExpr n -> pack_node "IntLiteral" [] ~comment:(Int64.to_string n)
     | ErrorExpr err -> lerror_to_json err
 
-  and lexpr_to_json id_to_str = expr_to_json id_to_str |> Located.to_json
-
   and stmt_to_json id_to_str (stmt : 'id Syntax.stmt) =
     match stmt with
     | ExprStmt lexpr -> lexpr_to_json id_to_str lexpr
@@ -43,15 +69,17 @@ module SyntaxReport = struct
           [ lid_to_json id_to_str lid; lexpr_to_json id_to_str lexpr ]
     | ErrorStmt err -> lerror_to_json err
 
+  and lexpr_to_json f = located_to_json (expr_to_json f)
+  and lstmt_to_json f = located_to_json (stmt_to_json f)
+
   let to_json id_to_str (ast : 'id Syntax.t) =
-    pack_node "Program"
-      (List.map (Located.to_json (stmt_to_json id_to_str)) ast)
+    pack_node "Program" (List.map (lstmt_to_json id_to_str) ast)
 end
 
 let report_lexer (lex : Lexer.t) : Yojson.Basic.t * bool =
   let rec loop acc lex error_flag =
     let located_token, lex' = Lexer.next_token lex in
-    let acc' = Located.to_json Token.to_json located_token :: acc in
+    let acc' = located_to_json TokenReport.to_json located_token :: acc in
     match located_token with
     | At (_, Eof) -> (acc', error_flag)
     | _ ->
@@ -68,4 +96,4 @@ let report_lexer (lex : Lexer.t) : Yojson.Basic.t * bool =
 
 let report_parser (lex : Lexer.t) : Yojson.Basic.t * bool =
   let flag, ast = Parser.parse lex in
-  (Located.to_json (SyntaxReport.to_json Fun.id) ast, flag)
+  (located_to_json (SyntaxReport.to_json Fun.id) ast, flag)
