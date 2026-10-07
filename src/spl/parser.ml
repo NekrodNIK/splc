@@ -190,37 +190,6 @@ let parse_stmt =
     (fun x -> Syntax.ErrorStmt x)
     true
 
-let check_semantics (Located.At (_, stmts)) =
-  let env, err = (Hashtbl.create 16, ref false) in
-  let rec check_expr (Located.At (_, expr)) =
-    match expr with
-    | Syntax.IdentExpr (id) ->
-        if not (Hashtbl.mem env id) then err := true
-    | Syntax.BinOpExpr (_, lhs, rhs) ->
-        check_expr lhs;
-        check_expr rhs
-    | Syntax.UnaryOpExpr (_, e) -> check_expr e
-    | _ -> ()
-  in
-  let chk_decl decl =
-    match decl with
-    | Syntax.DeclStmt (mut, At(_, id), expr) ->
-        check_expr expr;
-        if Hashtbl.mem env id then err := true else Hashtbl.add env id (mut = Syntax.Var)
-    | _ -> ()
-  in
-  List.iter
-    (fun (Located.At (_, s)) ->
-      match s with
-      | Syntax.DeclStmt _ -> chk_decl s
-      | Syntax.AssignStmt (At (_, id), expr) ->
-          check_expr expr;
-          if Hashtbl.find_opt env id <> Some true then err := true
-      | Syntax.ExprStmt expr | Syntax.ReturnStmt expr -> check_expr expr
-      | _ -> ())
-    stmts;
-  !err
-
 let parse lex : bool * string Syntax.t Located.t =
   let st, res =
     (save_loc (many parse_stmt)).run { lex; is_err = false }
@@ -228,4 +197,4 @@ let parse lex : bool * string Syntax.t Located.t =
       (fun _ s ->
         (s, Located.map (fun _ -> []) (fst @@ Lexer.next_token s.lex)))
   in
-  (st.is_err || check_semantics res, res)
+  (st.is_err || Sema.check_ast @@ Located.get res, res)
