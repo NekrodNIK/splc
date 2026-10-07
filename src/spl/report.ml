@@ -53,7 +53,8 @@ module SyntaxReport = struct
           [ lexpr_to_json id_to_str expr ]
           ~comment:(Syntax.unop_to_string op)
     | IdentExpr id -> pack_node "Ident" [] ~comment:(id_to_str id)
-    | IntLitExpr n -> pack_node "IntLiteral" [] ~comment:(Int64.to_string n)
+    | IntLitExpr n ->
+        pack_node "IntLiteral" [] ~comment:(Printf.sprintf "%Lu" n)
     | ErrorExpr err -> lerror_to_json err
 
   and stmt_to_json id_to_str (stmt : 'id Syntax.stmt) =
