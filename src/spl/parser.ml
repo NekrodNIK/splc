@@ -43,7 +43,7 @@ let satisfy_map f =
       return_err
         (Located.At (loc, Errors.UnexpectedToken (Token.to_string token)))
 
-let expect token = satisfy_map (fun x -> if x = token then Some () else None)
+let expect token = satisfy_map (fun x -> if x = token then Some token else None)
 
 let save_loc p =
   {
@@ -91,20 +91,20 @@ let parse_number = satisfy_map (function Token.Number n -> Some n | _ -> None)
 
 let parse_binop () =
   satisfy_map (function
-    | Plus -> Some Syntax.Add
-    | Minus -> Some Syntax.Sub
-    | Asterisk -> Some Syntax.Mul
-    | Slash -> Some Syntax.Div
+    | Plus -> Some Syntax.AddOp
+    | Minus -> Some Syntax.SubOp
+    | Asterisk -> Some Syntax.MulOp
+    | Slash -> Some Syntax.DivOp
     | _ -> None)
 
 let parse_ident_expr =
-  let+ (Located.At (loc, _) as id) = parse_ident in
+  let+ (Located.At (loc, id)) = parse_ident in
   Located.At (loc, Syntax.IdentExpr id)
 
 let parse_intlit_expr =
   let+ (Located.At (loc, n)) = parse_number in
-  let v = try Scanf.sscanf n "%Lu" Fun.id with _ -> 0L in
-  Located.At (loc, Syntax.IntLitExpr (At (loc, v)))
+  let n = try Scanf.sscanf n "%Lu" Fun.id with _ -> 0L in
+  Located.At (loc, Syntax.IntLitExpr n)
 
 let rec parse_primary_expr () =
   parse_ident_expr <|> parse_intlit_expr
@@ -118,7 +118,7 @@ let rec parse_primary_expr () =
 and parse_unary_expr () =
   (let* (Located.At (loc, _)) = expect Token.Minus in
    let* rhs = parse_unary_expr () in
-   return (Located.At (loc, Syntax.UnaryOpExpr (At (loc, Syntax.Minus), rhs))))
+   return (Located.At (loc, Syntax.UnaryOpExpr (Syntax.NegOp, rhs))))
   <|> parse_primary_expr ()
 
 and parse_binop_expr prec =
@@ -129,8 +129,7 @@ and parse_binop_expr prec =
      if next_prec > prec then
        let* _ = parse_binop () in
        let* rhs = parse_binop_expr next_prec in
-       loop
-         (Located.At (loc, Syntax.BinOpExpr (lhs, Located.At (loc, binop), rhs)))
+       loop (Located.At (loc, Syntax.BinOpExpr (binop, lhs, rhs)))
      else return lhs)
     <|> return lhs
   in
@@ -139,29 +138,20 @@ and parse_binop_expr prec =
 and parse_expr () =
   parse_binop_expr min_int <|> error_stub (fun x -> Syntax.ErrorExpr x)
 
-let expect_semi = recover (expect Token.SemiColon) (fun _ -> ()) true
+let expect_semi = recover (expect Token.SemiColon) (fun _ -> Token.SemiColon) true
 
-let parse_decl_with kw ctor =
-  let* _ = expect kw in
+let parse_decl =
+  let* (At (_, kw)) = expect Token.Val <|> expect Token.Var in
   let* id = parse_ident in
-  let* expr =
+  let+ expr =
     recover
       (let* _ = expect Token.Assign in
        parse_expr ())
       (fun x -> Syntax.ErrorExpr x)
       false
   in
-  return (ctor (id, expr))
-
-let parse_var_decl =
-  parse_decl_with Token.Var (fun (id, e) -> Syntax.VarDecl (id, e))
-
-let parse_val_decl =
-  parse_decl_with Token.Val (fun (id, e) -> Syntax.ValDecl (id, e))
-
-let parse_decl =
-  save_loc parse_var_decl <|> save_loc parse_val_decl
-  <|> error_stub (fun x -> Syntax.ErrorDecl x)
+  Syntax.DeclStmt
+    ((match kw with Token.Val -> Syntax.Val | _ -> Syntax.Var), id, expr)
 
 let parse_return_stmt =
   save_loc
@@ -175,7 +165,7 @@ let parse_decl_stmt =
     (let* _ = lookahead (expect Token.Var <|> expect Token.Val) in
      let* d = parse_decl in
      let* _ = expect_semi in
-     return (Syntax.DeclStmt d))
+     return d)
 
 let parse_assign_stmt =
   let* (At (_, _) as id) = parse_ident in
@@ -204,28 +194,25 @@ let check_semantics (Located.At (_, stmts)) =
   let env, err = (Hashtbl.create 16, ref false) in
   let rec check_expr (Located.At (_, expr)) =
     match expr with
-    | Syntax.IdentExpr (At (_, id)) ->
+    | Syntax.IdentExpr (id) ->
         if not (Hashtbl.mem env id) then err := true
-    | Syntax.BinOpExpr (lhs, _, rhs) ->
+    | Syntax.BinOpExpr (_, lhs, rhs) ->
         check_expr lhs;
         check_expr rhs
     | Syntax.UnaryOpExpr (_, e) -> check_expr e
     | _ -> ()
   in
-  let chk_decl (Located.At (_, decl)) =
+  let chk_decl decl =
     match decl with
-    | Syntax.ValDecl (At (_, id), expr) ->
+    | Syntax.DeclStmt (mut, At(_, id), expr) ->
         check_expr expr;
-        if Hashtbl.mem env id then err := true else Hashtbl.add env id false
-    | Syntax.VarDecl (At (_, id), expr) ->
-        check_expr expr;
-        if Hashtbl.mem env id then err := true else Hashtbl.add env id true
+        if Hashtbl.mem env id then err := true else Hashtbl.add env id (mut = Syntax.Var)
     | _ -> ()
   in
   List.iter
     (fun (Located.At (_, s)) ->
       match s with
-      | Syntax.DeclStmt decl -> chk_decl decl
+      | Syntax.DeclStmt _ -> chk_decl s
       | Syntax.AssignStmt (At (_, id), expr) ->
           check_expr expr;
           if Hashtbl.find_opt env id <> Some true then err := true
