@@ -3,33 +3,37 @@ open Cmdliner.Term.Syntax
 
 let grammar_ver = 1
 
-let rec splc src_path lr pr =
-  let src = In_channel.with_open_text src_path In_channel.input_all in
-  let lex = Spl.Lexer.from_string src in
+let splc src_path lr pr =
+  let lex =
+    Spl.Lexer.from_string
+    @@ In_channel.with_open_text src_path In_channel.input_all
+  in
 
-  let lexing_error =
+  let result =
     match lr with
     | Some lr_path ->
         let report, error_flag = Spl.Report.report_lexer lex in
-        let () = write_report report lr_path in
-        error_flag
-    | _ -> false
+        let () =
+          Out_channel.with_open_text lr_path
+          @@ (Fun.flip Yojson.Basic.pretty_to_channel) report
+        in
+        if error_flag then Cmd.Exit.some_error else Cmd.Exit.ok
+    | _ -> Cmd.Exit.ok
   in
 
-  let parsing_error, syntax_tree = Spl.Parser.parse lex in
-  let () =
+  let result2 =
     match pr with
     | Some pr_path ->
-        let report = Spl.Report.report_ast syntax_tree in
-        write_report report pr_path
-    | _ -> ()
+        let report, error_flag = Spl.Report.report_parser lex in
+        let () =
+          Out_channel.with_open_text pr_path
+          @@ (Fun.flip Yojson.Basic.pretty_to_channel) report
+        in
+        if error_flag then Cmd.Exit.some_error else Cmd.Exit.ok
+    | _ -> Cmd.Exit.ok
   in
-
-  if lexing_error || parsing_error then Cmd.Exit.some_error else Cmd.Exit.ok
-
-and write_report report path =
-  (Fun.flip Yojson.Basic.pretty_to_channel) report
-  |> Out_channel.with_open_text path
+  
+  if result == Cmd.Exit.ok then result2 else result
 
 let cmd =
   Cmd.v (Cmd.info "splc")

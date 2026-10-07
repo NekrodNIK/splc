@@ -95,5 +95,6 @@ let report_lexer (lex : Lexer.t) : Yojson.Basic.t * bool =
   let l, f = loop [] lex false in
   (`List (List.rev l), f)
 
-let report_ast (tree : string Syntax.t Located.t) : Yojson.Basic.t  =
-  located_to_json (SyntaxReport.to_json Fun.id) tree
+let report_parser (lex : Lexer.t) : Yojson.Basic.t * bool =
+  let flag, ast = Parser.parse lex in
+  (located_to_json (SyntaxReport.to_json Fun.id) ast, flag)
