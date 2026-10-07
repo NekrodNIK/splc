@@ -85,7 +85,7 @@ let report_lexer (lex : Lexer.t) : Yojson.Basic.t * bool =
     | At (_, Eof) -> (acc', error_flag)
     | _ ->
         loop acc' lex'
-          (* TODO: remove error_flag after implementing error collection in the parser stage *)
+          (* TODO: remove error_flag after implementing error collection *)
           (error_flag
           ||
           match located_token with

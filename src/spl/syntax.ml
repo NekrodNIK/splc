@@ -23,7 +23,7 @@ and 'id lid = 'id Located.t
 
 type 'id t = 'id lstmt list
 
-let binop_precedence = function AddOp | SubOp -> 0 | MulOp | DivOp -> 1
+let binop_precedence = function AddOp | SubOp -> 1 | MulOp | DivOp -> 2
 
 let binop_to_string = function
   | AddOp -> "+"
