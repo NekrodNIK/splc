@@ -9,7 +9,7 @@ let splc src_path lr pr =
   let ast, parser_errors = Spl.Parser.parse lex in
 
   if Option.is_some lr || Option.is_some pr then
-    let result =
+    let lexer_flag =
       match lr with
       | Some lr_path ->
           let report, error_flag = Spl.Report.report_lexer lex in
@@ -17,11 +17,11 @@ let splc src_path lr pr =
             Out_channel.with_open_text lr_path
             @@ (Fun.flip Yojson.Basic.pretty_to_channel) report
           in
-          if error_flag then Cmd.Exit.some_error else Cmd.Exit.ok
-      | _ -> Cmd.Exit.ok
+          error_flag
+      | _ -> false
     in
 
-    let result2 =
+    let parser_flag =
       match pr with
       | Some pr_path ->
           let report = Spl.Report.report_ast Fun.id ast in
@@ -29,12 +29,12 @@ let splc src_path lr pr =
             Out_channel.with_open_text pr_path
             @@ (Fun.flip Yojson.Basic.pretty_to_channel) report
           in
-          if List.is_empty parser_errors then Cmd.Exit.ok
-          else Cmd.Exit.some_error
-      | _ -> Cmd.Exit.ok
+          List.is_empty parser_errors
+      | _ -> false
     in
-    if result == Cmd.Exit.ok then result2 else result
-  else if List.is_empty parser_errors then Cmd.Exit.ok
+    if lexer_flag || parser_flag then Cmd.Exit.some_error else Cmd.Exit.ok
+  else if List.is_empty parser_errors then
+    Cmd.Exit.ok
   else
     let () = List.iter (Spl.Errors.print_error src_path src) parser_errors in
     Cmd.Exit.some_error
