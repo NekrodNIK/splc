@@ -14,9 +14,12 @@ let rec check_stmt env ldecl : bool =
   | Syntax.AssignStmt (At (_, id), rhs) ->
       check_lexpr env rhs
       || Option.value (Hashtbl.find_opt env id) ~default:false
-  | Syntax.ExprStmt lexpr | Syntax.ReturnStmt lexpr -> check_lexpr env lexpr
+  | Syntax.ExprStmt _ -> true
+  | Syntax.ReturnStmt lexpr -> check_lexpr env lexpr
   | _ -> false
 
-let check_ast (tree : 'id Syntax.t) : bool =
+let check_ast (tree : 'id Syntax.t) =
   let env = Hashtbl.create 16 in
-  List.fold_left (fun acc stmt -> acc || check_stmt env stmt) false tree
+  if List.fold_left (fun acc stmt -> acc || check_stmt env stmt) false tree then
+    [ Located.At ({ offset = 0; col = 1; line = 1 }, (Errors.UnknownToken('c'))) ]
+  else []

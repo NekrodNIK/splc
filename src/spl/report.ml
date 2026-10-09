@@ -85,7 +85,6 @@ let report_lexer (lex : Lexer.t) : Yojson.Basic.t * bool =
     | At (_, Eof) -> (acc', error_flag)
     | _ ->
         loop acc' lex'
-          (* TODO: remove error_flag after implementing error collection *)
           (error_flag
           ||
           match located_token with
@@ -95,6 +94,5 @@ let report_lexer (lex : Lexer.t) : Yojson.Basic.t * bool =
   let l, f = loop [] lex false in
   (`List (List.rev l), f)
 
-let report_parser (lex : Lexer.t) : Yojson.Basic.t * bool =
-  let flag, ast = Parser.parse lex in
-  (located_to_json (SyntaxReport.to_json Fun.id) ast, flag)
+let report_ast id_to_string (ast : 'id Syntax.t Located.t) : Yojson.Basic.t =
+  located_to_json (SyntaxReport.to_json id_to_string) ast

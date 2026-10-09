@@ -4,36 +4,40 @@ open Cmdliner.Term.Syntax
 let grammar_ver = 1
 
 let splc src_path lr pr =
-  let lex =
-    Spl.Lexer.from_string
-    @@ In_channel.with_open_text src_path In_channel.input_all
-  in
+  let src = In_channel.with_open_text src_path In_channel.input_all in
+  let lex = Spl.Lexer.from_string src in
+  let ast, parser_errors = Spl.Parser.parse lex in
 
-  let result =
-    match lr with
-    | Some lr_path ->
-        let report, error_flag = Spl.Report.report_lexer lex in
-        let () =
-          Out_channel.with_open_text lr_path
-          @@ (Fun.flip Yojson.Basic.pretty_to_channel) report
-        in
-        if error_flag then Cmd.Exit.some_error else Cmd.Exit.ok
-    | _ -> Cmd.Exit.ok
-  in
+  if Option.is_some lr || Option.is_some pr then
+    let result =
+      match lr with
+      | Some lr_path ->
+          let report, error_flag = Spl.Report.report_lexer lex in
+          let () =
+            Out_channel.with_open_text lr_path
+            @@ (Fun.flip Yojson.Basic.pretty_to_channel) report
+          in
+          if error_flag then Cmd.Exit.some_error else Cmd.Exit.ok
+      | _ -> Cmd.Exit.ok
+    in
 
-  let result2 =
-    match pr with
-    | Some pr_path ->
-        let report, error_flag = Spl.Report.report_parser lex in
-        let () =
-          Out_channel.with_open_text pr_path
-          @@ (Fun.flip Yojson.Basic.pretty_to_channel) report
-        in
-        if error_flag then Cmd.Exit.some_error else Cmd.Exit.ok
-    | _ -> Cmd.Exit.ok
-  in
-  
-  if result == Cmd.Exit.ok then result2 else result
+    let result2 =
+      match pr with
+      | Some pr_path ->
+          let report = Spl.Report.report_ast Fun.id ast in
+          let () =
+            Out_channel.with_open_text pr_path
+            @@ (Fun.flip Yojson.Basic.pretty_to_channel) report
+          in
+          if List.is_empty parser_errors then Cmd.Exit.ok
+          else Cmd.Exit.some_error
+      | _ -> Cmd.Exit.ok
+    in
+    if result == Cmd.Exit.ok then result2 else result
+  else if List.is_empty parser_errors then Cmd.Exit.ok
+  else
+    let () = List.iter (Spl.Errors.print_error src_path src) parser_errors in
+    Cmd.Exit.some_error
 
 let cmd =
   Cmd.v (Cmd.info "splc")
