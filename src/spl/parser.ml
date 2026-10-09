@@ -205,4 +205,4 @@ let parse lex =
       (fun _ s ->
         (s, Located.map (fun _ -> []) (fst @@ Lexer.next_token s.lex)))
   in
-  (res, List.rev st.errors @ Sema.check_ast @@ Located.get res)
+  (res, List.rev st.errors @ Sema.check_ast (Located.get res))
