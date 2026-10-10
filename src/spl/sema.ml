@@ -27,6 +27,6 @@ let rec check_stmt env (Located.At (loc, decl)) =
   | Syntax.ReturnStmt lexpr -> check_lexpr env lexpr
   | _ -> []
 
-let check_ast (tree : 'id Syntax.t) =
+let check_ast (At (_, tree) : 'id Syntax.t Located.t) =
   let env = Hashtbl.create 16 in
   List.fold_left (fun acc stmt -> acc @ check_stmt env stmt) [] tree
