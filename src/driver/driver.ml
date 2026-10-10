@@ -29,14 +29,17 @@ let splc src_path lr pr =
             Out_channel.with_open_text pr_path
             @@ (Fun.flip Yojson.Basic.pretty_to_channel) report
           in
-          List.is_empty parser_errors
+          not (List.is_empty parser_errors)
       | _ -> false
     in
     if lexer_flag || parser_flag then Cmd.Exit.some_error else Cmd.Exit.ok
-  else if List.is_empty parser_errors then
-    Cmd.Exit.ok
+  else if List.is_empty parser_errors then Cmd.Exit.ok
   else
-    let () = List.iter (Spl.Errors.print_error src_path src) parser_errors in
+    let print_error error =
+      let () = print_string (Spl.Errors.error_message src_path src error) in
+      print_newline ()
+    in
+    let () = List.iter print_error parser_errors in
     Cmd.Exit.some_error
 
 let cmd =

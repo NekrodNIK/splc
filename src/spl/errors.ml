@@ -22,7 +22,9 @@ let to_string = function
       [%string "cannot assign to immutable variable '%{id}'"]
 
 let underline_length = function
-  | UnterminatedMultilineComment | UnknownToken _ | MissingSemiColon | ExpressionResultUnused -> 1
+  | UnterminatedMultilineComment | UnknownToken _ | MissingSemiColon
+  | ExpressionResultUnused ->
+      1
   | Expected { actual = s }
   | UndeclaredIdentifier s
   | Redeclaration s
@@ -32,17 +34,18 @@ let underline_length = function
 let red s = [%string "\x1b[31m%{s}\x1b[0m"]
 let bold s = [%string "\x1b[1m%{s}\x1b[0m"]
 
-let print_error filepath src (At (loc, err) : t Located.t) =
+let error_message filepath src (At (loc, err) : t Located.t) =
   let lines = String.split_on_char '\n' src in
   let line = List.nth lines (loc.line - 1) in
-  let idnum = Int.to_string loc.line in
-  let ident = String.make (String.length idnum) ' ' in
+  let line_num = Int.to_string loc.line in
+
+  let identation = String.make (String.length line_num) ' ' in
   let underline = red @@ bold @@ String.make (underline_length err) '^' in
   {%string|
 %{red @@ bold "error"}: %{to_string err}
-%{ident} -> %{filepath}:%{loc.line#Int}:%{loc.col#Int}
-%{ident} |
-%{idnum} | %{line}
-%{ident} | %{String.make (loc.col-1) ' '}%{underline}
+%{identation} -> %{filepath}:%{loc.line#Int}:%{loc.col#Int}
+%{identation} |
+%{  line_num} | %{line}
+%{identation} | %{String.make (loc.col-1) ' '}%{underline}
 |}
-  |> String.trim |> print_string |> print_newline
+  |> String.trim
