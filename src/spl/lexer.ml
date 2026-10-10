@@ -2,7 +2,7 @@ open Result.Syntax
 
 type t = { src : string; loc : Located.location }
 
-let from_string src = { src; loc = { offset = 0; line = 1; col = 1 } }
+let from_string src = { src; loc = Located.zero_location }
 
 type 'a res = ('a, Token.t Located.t) result
 
