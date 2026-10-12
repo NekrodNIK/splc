@@ -26,7 +26,7 @@
         {"type": "llvm"}
       ]
     },
-    "compile": {
+    "compiler": {
       "cmd": ["{root}/_build/install/default/bin/splc", "-g", "{grammar}", "-o", "{exe}", "{input}"]
     },
     "run": {
