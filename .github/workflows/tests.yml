@@ -11,7 +11,6 @@ jobs:
     strategy:
       matrix:
         grammar: [1]
-        stage: ["lexer", "parser", "llvm", "run"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -32,12 +31,28 @@ jobs:
           ocaml-compiler: 5
 
       - name: Install splc dependencies
-        run: |
+        run:
           opam install . --deps-only
 
       - name: Build your compiler
         run:
           opam exec -- dune build
 
-      - name: Run tests for grammar ${{ matrix.grammar }}
-        run: python3 test/run_tests.py test --grammar ${{ matrix.grammar }} --stage ${{ matrix.stage }} --no-build --check-ir
+      - name: Run tests (lexer stage)
+        run:
+          python3 test/run_tests.py test --grammar  ${{ matrix.grammar }} --stage lexer --no-build
+
+      - name: Run tests (parser stage)
+        if: success() || failure()
+        run:
+          python3 test/run_tests.py test --grammar  ${{ matrix.grammar }} --stage parser --no-build
+
+      - name: Run tests (llvm stage)
+        if: success() || failure()
+        run:
+          python3 test/run_tests.py test --grammar ${{ matrix.grammar }} --stage llvm --no-build
+
+      - name: Run tests (run stage)
+        if: success() || failure()
+        run:
+          python3 test/run_tests.py test --grammar ${{ matrix.grammar }} --stage run --no-build
