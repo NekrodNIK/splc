@@ -15,5 +15,7 @@
   ppx_deriving
   yojson
   cmdliner
+  (llvm
+   (= 19-static))
   (ocaml-lsp-server :with-dev-setup)
   (ocamlformat :with-dev-setup)))

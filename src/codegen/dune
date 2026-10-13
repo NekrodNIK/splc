@@ -1,0 +1,4 @@
+(library
+ (name codegen)
+ (preprocess
+  (pps ppx_deriving.show ppx_string)))
