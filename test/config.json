@@ -20,7 +20,7 @@
       ]
     },
     "llvm": {
-      "cmd": ["{root}/_build/install/default/bin/splc", "-g", "{grammar}", "-o", "{llvm_out}", "{input}"],
+      "cmd": ["{root}/_build/install/default/bin/splc", "-g", "{grammar}", "-o", "{llvm_out}", "--emit-llvm", "{input}"],
       "out": "{llvm_out}",
       "preprocess": [
         {"type": "llvm"}
