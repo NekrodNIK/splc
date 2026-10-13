@@ -9,7 +9,7 @@ let rec splc src_path out_path lr pr emit_llvm =
 
   let has_error =
     if Option.is_none lr && Option.is_none pr then
-      compile src lex src_path out_path emit_llvm
+      run src lex src_path out_path emit_llvm
     else
       let lexer_error =
         match lr with Some lr_path -> lexer_report lex lr_path | None -> false
@@ -22,25 +22,37 @@ let rec splc src_path out_path lr pr emit_llvm =
   in
   if has_error then Cmd.Exit.some_error else Cmd.Exit.ok
 
-and compile src lex src_path out_path emit_llvm =
+and run src lex src_path out_path emit_llvm =
   let ast, errors = Spl.Parser.parse lex in
   match errors with
-  | [] ->
-      let codegen = Spl.Codegen.run ast (Filename.basename src_path) in
-      let llvm_out =
-        if emit_llvm then out_path else Filename.temp_file "spl." ".ll"
-      in
-      let () = Spl.Codegen.emit codegen llvm_out in
-      if not emit_llvm then
-        let _ = Sys.command
-        @@ Filename.quote_command "clang" [ llvm_out; "-o"; out_path ] in ()
-      else (); false
+  | [] -> run_codegen ast src_path out_path emit_llvm
   | errors ->
       let print_error error =
-        let () = print_string (Spl.Errors.error_message src_path src error) in
-        print_newline ()
+        let () = prerr_string (Spl.Errors.error_message src_path src error) in
+        prerr_newline ()
       in
       let () = List.iter print_error errors in
+      true
+
+and run_codegen ast src_path out_path emit_llvm =
+  let src_name = Filename.basename src_path in
+  let llvm_out =
+    if emit_llvm then out_path else Filename.temp_file "spl." ".ll"
+  in
+  match Spl.Codegen.emit ~ast ~module_name:src_name ~output_path:llvm_out with
+  | Ok () when emit_llvm -> false
+  | Ok () -> (
+      let exit_code =
+        Sys.command
+        @@ Filename.quote_command "clang" [ llvm_out; "-o"; out_path ]
+      in
+      match exit_code with
+      | 0 -> false
+      | n ->
+          prerr_string [%string "clang failed with exit code: %{n#Int}"];
+          true)
+  | Error Spl.Codegen.(GetTargetError s | WriteToFileError s) ->
+      prerr_string s;
       true
 
 and lexer_report lex lr_path =
