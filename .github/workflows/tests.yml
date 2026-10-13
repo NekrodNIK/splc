@@ -50,7 +50,7 @@ jobs:
       - name: Run tests (llvm stage)
         if: success() || failure()
         run:
-          python3 test/run_tests.py test --grammar ${{ matrix.grammar }} --stage llvm --no-build
+          python3 test/run_tests.py test --grammar ${{ matrix.grammar }} --stage llvm --no-build --check-ir
 
       - name: Run tests (run stage)
         if: success() || failure()
