@@ -66,7 +66,7 @@ let rec emit ~ast ~module_name ~output_path =
 
 and set_target st =
   let open Llvm_target in
-  let triple = Target.default_triple () in
+  let triple = "x86_64-unknown-linux-gnu" in
   let+ target =
     try Ok (Target.by_triple triple)
     with Llvm_target.Error s -> Error (GetTargetError s)
