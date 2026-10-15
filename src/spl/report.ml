@@ -9,8 +9,8 @@ module TokenReport = struct
       match token with
       | Ident _ -> "IDENT"
       | Number _ -> "INT"
-      | Boolean true -> "TRUE"
-      | Boolean false -> "FALSE"
+      | True -> "TRUE"
+      | False -> "FALSE"
       | Val -> "VAL"
       | Var -> "VAR"
       | Return -> "RETURN"
