@@ -8,8 +8,14 @@
  (name splc)
  (depends
   (ocaml
-   (>= 5.5.0))
-  (astring
-   (>= 0.8.5))
+   (and
+    (>= 5.5.0)
+    (< 5.6.0)))
+  ppx_string
+  ppx_deriving
+  yojson
+  cmdliner
+  (llvm
+   (= 19-static))
   (ocaml-lsp-server :with-dev-setup)
   (ocamlformat :with-dev-setup)))
