@@ -6,10 +6,12 @@ let from_string src = { src; loc = Located.zero_location }
 
 type 'a res = ('a, Token.t Located.t) result
 
-let peek st : char res =
+let peek_nth st n : char res =
   let { src; loc } = !st in
-  if loc.offset < String.length src then Ok src.[loc.offset]
+  if loc.offset + n < String.length src then Ok src.[loc.offset + n]
   else Error (At (loc, Eof))
+
+let peek st : char res = peek_nth st 0
 
 let peek_string st upper : string =
   let { src; loc } = !st in
@@ -84,29 +86,51 @@ let read_ident st : Token.t res =
   | "val" -> Token.Val
   | "var" -> Token.Var
   | "return" -> Token.Return
+  | "if" -> Token.If
+  | "else" -> Token.Else
+  | "while" -> Token.While
+  | "break" -> Token.Break
+  | "continue" -> Token.Continue
+  | "true" -> Token.Boolean true
+  | "false" -> Token.Boolean false
   | id -> Token.Ident id
+
+let next_is st ch : bool =
+  match peek_nth st 1 with Ok next when next == ch -> true | _ -> false
 
 let read_token st : Token.t Located.t res =
   let loc = !st.loc in
   let* ch = peek st in
 
-  let single tok = Result.map (fun _ -> tok) (eat st)
-  and single_err tok = Result.bind (eat st) (fun _ -> Error (At (loc, tok))) in
+  let one tok = Result.map (fun _ -> tok) (eat st)
+  and one_err tok = Result.bind (eat st) (fun _ -> Error (At (loc, tok))) in
+  let two tok = Result.map (fun _ -> tok) (eat_n st 2) in
 
   let token =
     match ch with
-    | '(' -> single Token.LParen
-    | ')' -> single Token.RParen
-    | '+' -> single Token.Plus
-    | '-' -> single Token.Minus
-    | '/' -> single Token.Slash
-    | '*' -> single Token.Asterisk
-    | ';' -> single Token.SemiColon
-    | '=' -> single Token.Assign
-    | '0' -> single (Token.Number "0")
+    | '(' -> one Token.LParen
+    | ')' -> one Token.RParen
+    | '{' -> one Token.LBrace
+    | '}' -> one Token.RBrace
+    | '+' -> one Token.Plus
+    | '-' -> one Token.Minus
+    | '*' -> one Token.Star
+    | '/' -> one Token.Slash
+    | ';' -> one Token.Semi
+    | '=' when next_is st '=' -> two Token.Eq
+    | '=' -> one Token.Assign
+    | '<' when next_is st '=' -> two Token.Le
+    | '<' -> one Token.Lt
+    | '>' when next_is st '=' -> two Token.Ge
+    | '>' -> one Token.Gt
+    | '!' when next_is st '=' -> two Token.Ne
+    | '!' -> one Token.Not
+    | '&' when next_is st '&' -> two Token.And
+    | '|' when next_is st '|' -> two Token.Or
+    | '0' -> one (Token.Number "0")
     | ch when is_digit ch -> read_number st
     | ch when is_non_digit ch -> read_ident st
-    | ch -> single_err (Token.Error (UnknownToken ch))
+    | ch -> one_err (Token.Error (UnknownToken ch))
   in
   Result.map (fun x -> Located.At (loc, x)) token
 

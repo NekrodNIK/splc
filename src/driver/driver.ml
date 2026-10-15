@@ -1,7 +1,7 @@
 open Cmdliner
 open Cmdliner.Term.Syntax
 
-let grammar_ver = 1
+let grammar_ver = 2
 
 let rec splc src_path out_path lr pr emit_llvm =
   let src = In_channel.with_open_text src_path In_channel.input_all in
