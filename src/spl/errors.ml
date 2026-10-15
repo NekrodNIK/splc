@@ -1,7 +1,7 @@
 type t =
   | UnterminatedMultilineComment
   | UnknownToken of char
-  | MissingSemiColon
+  | MissingSemi
   | Expected of { expected : string; actual : string }
   | UndeclaredIdentifier of string
   | Redeclaration of string
@@ -12,7 +12,7 @@ type t =
 let to_string = function
   | UnterminatedMultilineComment -> "unterminated multi-line comment"
   | UnknownToken ch -> [%string "unknown token '%{String.of_char ch}'"]
-  | MissingSemiColon -> "missing semicolon"
+  | MissingSemi -> "missing semicolon"
   | Expected { expected; actual } ->
       [%string "expected '%{expected}', actual: '%{actual}'"]
   | UndeclaredIdentifier id -> [%string "undeclared identifier '%{id}'"]
@@ -22,7 +22,7 @@ let to_string = function
       [%string "cannot assign to immutable variable '%{id}'"]
 
 let underline_length = function
-  | UnterminatedMultilineComment | UnknownToken _ | MissingSemiColon
+  | UnterminatedMultilineComment | UnknownToken _ | MissingSemi
   | ExpressionResultUnused ->
       1
   | Expected { actual = s }

@@ -63,7 +63,7 @@ let synchronize =
   let rec go () =
     let* (At (_, token)) = lookahead any_token in
     match token with
-    | Token.SemiColon | Token.Eof -> return ()
+    | Token.Semi | Token.Eof -> return ()
     | _ ->
         let* _ = any_token in
         go ()
@@ -87,7 +87,7 @@ let parse_binop =
   satisfy_map "binary operator" (function
     | Plus -> Some Syntax.AddOp
     | Minus -> Some Syntax.SubOp
-    | Asterisk -> Some Syntax.MulOp
+    | Star -> Some Syntax.MulOp
     | Slash -> Some Syntax.DivOp
     | _ -> None)
 
@@ -145,10 +145,10 @@ let missing_semi =
   let* (At (loc, token)) = get_last_token in
   let semicolon_loc = { loc with col = loc.col + Token.length token } in
   emit_err
-    (At (semicolon_loc, Errors.MissingSemiColon))
-    (return (Located.At (loc, Token.SemiColon)))
+    (At (semicolon_loc, Errors.MissingSemi))
+    (return (Located.At (loc, Token.Semi)))
 
-let parse_semi = expect Token.SemiColon <|> missing_semi
+let parse_semi = expect Token.Semi <|> missing_semi
 
 let parse_decl_stmt =
   let* (At (loc, mut)) =
