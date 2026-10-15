@@ -1,7 +1,8 @@
 type t =
   | Ident of string
   | Number of string
-  | Boolean of bool
+  | True
+  | False
   | Val
   | Var
   | Return
@@ -36,7 +37,8 @@ type t =
 let to_string token : string =
   match token with
   | Ident x | Number x -> x
-  | Boolean x -> Bool.to_string x
+  | True -> "true"
+  | False -> "false"
   | Val -> "val"
   | Var -> "var"
   | Return -> "return"
@@ -70,8 +72,8 @@ let to_string token : string =
 let length token =
   match token with
   | Ident x | Number x -> String.length x
-  | Boolean true -> 4
-  | Boolean false -> 5
+  | True -> 4
+  | False -> 5
   | Val | Var -> 3
   | Return -> 6
   | If -> 2

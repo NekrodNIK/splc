@@ -91,8 +91,8 @@ let read_ident st : Token.t res =
   | "while" -> Token.While
   | "break" -> Token.Break
   | "continue" -> Token.Continue
-  | "true" -> Token.Boolean true
-  | "false" -> Token.Boolean false
+  | "true" -> Token.True
+  | "false" -> Token.False
   | id -> Token.Ident id
 
 let next_is st ch : bool =
