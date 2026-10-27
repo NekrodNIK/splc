@@ -1,3 +1,4 @@
+(* FIXME *)
 type ('a, 'r) parser =
   state -> ('a -> state -> 'r) -> (error -> state -> 'r) -> 'r
 
