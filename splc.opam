@@ -7,7 +7,7 @@ depends: [
   "ppx_deriving"
   "yojson"
   "cmdliner"
-  "llvm" {= "19-static"}
+  "llvm" {= "19-shared"}
   "ocaml-lsp-server" {with-dev-setup}
   "ocamlformat" {with-dev-setup}
   "odoc" {with-doc}

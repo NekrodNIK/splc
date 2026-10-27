@@ -1,8 +1,6 @@
 open Cmdliner
 open Cmdliner.Term.Syntax
 
-let grammar_ver = 2
-
 let rec splc src_path out_path lr pr emit_llvm =
   let src = In_channel.with_open_text src_path In_channel.input_all in
   let lex = Spl.Lexer.from_string src in
@@ -83,7 +81,7 @@ let cmd =
   and+ _ =
     Arg.(
       value
-      & opt (enum [ ([%string "%{grammar_ver#Int}"], grammar_ver) ]) grammar_ver
+      & opt (enum [ ("1", 1); ("2", 2) ]) 2
       & info [ "g" ])
   in
   splc src_path (Option.get out_path) lr pr emit_llvm
