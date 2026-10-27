@@ -16,6 +16,6 @@
   yojson
   cmdliner
   (llvm
-   (= 19-static))
+   (= 19-shared))
   (ocaml-lsp-server :with-dev-setup)
   (ocamlformat :with-dev-setup)))
