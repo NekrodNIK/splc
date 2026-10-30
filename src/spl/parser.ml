@@ -1,4 +1,3 @@
-(* FIXME *)
 open Parser_base
 
 let parse_ident =
@@ -28,7 +27,7 @@ let parse_unop =
 
 let recover_expr =
   let recovery (Located.At (loc, _) as error) =
-    emit_err error (return (Located.At (loc, Syntax.ErrorExpr error)))
+    register_err error (return (Located.At (loc, Syntax.ErrorExpr error)))
   in
   with_recovery recovery
 
@@ -60,15 +59,12 @@ let rec parse_primary_expr () =
   recover_expr (parse_ident_expr <|> parse_intlit_expr <|> in_parens)
 
 and parse_unop_expr () =
-  begin
-    let* (At (loc, unop)) = parse_unop in
-    let+ rhs = parse_unop_expr () in
-    Located.At (loc, Syntax.UnaryOpExpr (unop, rhs))
-  end
+  (let* (At (loc, unop)) = parse_unop in
+   let+ rhs = parse_unop_expr () in
+   Located.At (loc, Syntax.UnaryOpExpr (unop, rhs)))
   <|> parse_primary_expr ()
 
 and parse_binop_expr prec =
-  let* lhs = parse_unop_expr () in
   let rec loop lhs =
     begin
       let* (Located.At (loc, binop)) = lookahead parse_binop in
@@ -83,24 +79,26 @@ and parse_binop_expr prec =
     end
     <|> return lhs
   in
+
+  let* lhs = parse_unop_expr () in
   loop lhs
 
 and parse_expr () = parse_binop_expr (Syntax.binop_min_precedence - 1)
 
 let recover_stmt =
   let recovery (Located.At (loc, _) as error) =
-    emit_err error (return (Located.At (loc, Syntax.ErrorStmt error)))
+    register_err error (return (Located.At (loc, Syntax.ErrorStmt error)))
   in
   with_recovery recovery
 
 let parse_expr_stmt =
-  let+ expr = parse_expr () in
-  Located.At (Located.get_loc expr, Syntax.ExprStmt expr)
+  let+ (Located.At (loc, _) as expr) = parse_expr () in
+  Located.At (loc, Syntax.ExprStmt expr)
 
 let missing_semi =
   let* (At (loc, token)) = get_last_token in
   let semicolon_loc = { loc with col = loc.col + Token.length token } in
-  emit_err
+  register_err
     (At (semicolon_loc, Errors.MissingSemi))
     (return (Located.At (loc, Token.Semi)))
 
@@ -140,12 +138,26 @@ let parse_break_stmt =
   let+ (At (loc, _)) = expect Continue in
   Located.At (loc, Syntax.BreakStmt)
 
+let parse_cond =
+  let* cond, has_errors =
+    (let* _ = expect Token.LParen in
+     let* cond = parse_expr () in
+     let+ _ = expect Token.RParen in
+     cond)
+    |> recover_expr
+    |> has_errors
+  in
+  let* _ =
+    if has_errors then synchronize [ Token.RParen; Token.LBrace; Token.Semi ] else return ()
+  in
+  return cond
+
 let rec parse_stmt () =
   let* _ = not_followed_by (expect Token.RBrace) in
   parse_block_stmt ()
   <|> parse_cond_stmt ()
   <|> parse_while_stmt ()
-  <|> (let* stmt =
+  <|> (let* stmt, has_errors =
          parse_continue_stmt
          <|> parse_break_stmt
          <|> parse_return_stmt
@@ -153,9 +165,9 @@ let rec parse_stmt () =
          <|> try_ parse_assign_stmt
          <|> parse_expr_stmt
          |> recover_stmt
+         |> has_errors
        in
-       let* has_error = clr_has_error has_error in
-       let* _ = if has_error then synchronize [ Token.Semi ] else return () in
+       let* _ = if has_errors then synchronize [ Token.Semi ] else return () in
        let+ _ = parse_semi in
        stmt)
   |> recover_stmt
@@ -166,37 +178,10 @@ and parse_block_stmt () =
   let+ _ = expect Token.RBrace in
   Located.At (loc, Syntax.BlockStmt stmts)
 
-and synchronize_cond =
-  let rec go () =
-    let* (At (_, token)) = lookahead any_token in
-    match token with
-    | Token.RParen | Token.LBrace | Token.Semi | Token.Eof -> return ()
-    | _ ->
-        let* _ = any_token in
-        go ()
-  in
-  go ()
-
-and recover_cond_expr () =
-  with_recovery @@ fun error ->
-  emit_err error
-  @@
-  let+ _ = synchronize_cond in
-  Located.At (Located.get_loc error, Syntax.ErrorExpr error)
-
 and parse_cond_stmt () =
   let* (At (loc, _)) = expect Token.If in
-  let* cond =
-    recover_expr
-      (let* _ = expect Token.LParen in
-       let* cond = parse_expr () in
-       let+ _ = expect Token.RParen in
-       cond)
-  in
-  let* has_error = clr_has_error has_error in
-  let* _ = if has_error then synchronize [ Token.RParen; Token.LBrace ] else return () in
+  let* cond = parse_cond in
   let* then_stmt = parse_stmt () in
-
   let+ else_stmt =
     (let* _ = expect Token.Else in
      let+ stmt = parse_stmt () in
@@ -208,13 +193,7 @@ and parse_cond_stmt () =
 
 and parse_while_stmt () =
   let* (At (loc, _)) = expect Token.While in
-  let* cond =
-    recover_cond_expr ()
-      (let* _ = expect Token.LParen in
-       let* cond = parse_expr () in
-       let+ _ = expect Token.RParen in
-       cond)
-  in
+  let* cond = parse_cond in
   let+ stmt = parse_stmt () in
   Located.At (loc, Syntax.WhileStmt (cond, stmt))
 

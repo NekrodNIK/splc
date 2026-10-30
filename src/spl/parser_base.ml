@@ -6,7 +6,6 @@ and state = {
   lex : Lexer.t;
   last_token : Token.t Located.t;
   error_list : error list;
-  has_error : bool;
 }
 
 and error = Errors.t Located.t
@@ -16,8 +15,8 @@ let ( let+ ) par f = fun st ok err -> par st (fun x st' -> ok (f x) st') err
 let return x = fun st ok _ -> ok x st
 let return_err e = fun st _ err -> err e st
 
-let emit_err e par =
- fun st -> par { st with error_list = e :: st.error_list; has_error = true }
+let register_err e par =
+ fun st -> par { st with error_list = e :: st.error_list }
 
 let lookahead par = fun st ok err -> par st (fun x _ -> ok x st) err
 
@@ -96,17 +95,18 @@ let save_loc par =
   let+ x = par in
   Located.At (loc, x)
 
-let has_error = fun st ok err -> ok st.has_error st
-
-let clr_has_error par =
- fun st ok err ->
-  par st
-    (fun x st' -> ok x { st' with has_error = false })
-    (fun e st' -> err e { st' with has_error = false })
-
 let make_initial_state lex =
   let loc = Located.zero_location in
-  { lex; last_token = At (loc, Token.Eof); error_list = []; has_error = false }
+  { lex; last_token = At (loc, Token.Eof); error_list = [] }
+
+let get_state = fun st ok _ -> ok st st
+let get_errors st = st.error_list
+
+let has_errors par =
+  let* head = ( let+ ) get_state get_errors in
+  let* x = par in
+  let+ head' = ( let+ ) get_state get_errors in
+  (x, head != head')
 
 let run_parser par st =
   let x, error_list =
