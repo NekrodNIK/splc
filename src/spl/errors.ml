@@ -7,6 +7,8 @@ type t =
   | Redeclaration of string
   | ExpressionResultUnused
   | AssignToImmutable of string
+  | ContinueOutsideLoop
+  | BreakOutsideLoop
 [@@deriving show]
 
 let to_string = function
@@ -20,6 +22,8 @@ let to_string = function
   | ExpressionResultUnused -> "expression result unused"
   | AssignToImmutable id ->
       [%string "cannot assign to immutable variable '%{id}'"]
+  | ContinueOutsideLoop -> [%string "continue outside loop"]
+  | BreakOutsideLoop -> [%string "break outside loop"]
 
 let underline_length = function
   | UnterminatedMultilineComment | UnknownToken _ | MissingSemi
@@ -30,6 +34,8 @@ let underline_length = function
   | Redeclaration s
   | AssignToImmutable s ->
       String.length s
+  | ContinueOutsideLoop -> 8
+  | BreakOutsideLoop -> 5
 
 let red s = [%string "\x1b[31m%{s}\x1b[0m"]
 let bold s = [%string "\x1b[1m%{s}\x1b[0m"]

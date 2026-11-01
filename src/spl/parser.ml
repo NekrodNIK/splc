@@ -56,7 +56,8 @@ let rec parse_primary_expr () =
     let+ _ = expect Token.RParen in
     expr
   in
-  recover_expr (parse_ident_expr <|> parse_intlit_expr <|> in_parens)
+  recover_expr
+    (parse_ident_expr <|> parse_intlit_expr <|> parse_boollit_expr <|> in_parens)
 
 and parse_unop_expr () =
   (let* (At (loc, unop)) = parse_unop in
@@ -135,7 +136,7 @@ let parse_continue_stmt =
   Located.At (loc, Syntax.ContinueStmt)
 
 let parse_break_stmt =
-  let+ (At (loc, _)) = expect Continue in
+  let+ (At (loc, _)) = expect Break in
   Located.At (loc, Syntax.BreakStmt)
 
 let parse_cond =
@@ -148,7 +149,8 @@ let parse_cond =
     |> has_errors
   in
   let* _ =
-    if has_errors then synchronize [ Token.RParen; Token.LBrace; Token.Semi ] else return ()
+    if has_errors then synchronize [ Token.RParen; Token.LBrace; Token.Semi ]
+    else return ()
   in
   return cond
 

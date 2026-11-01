@@ -1,32 +1,62 @@
-let rec check_expr env (Located.At (loc, expr)) =
-  match expr with
-  | Syntax.IdentExpr id when not (Hashtbl.mem env id) ->
-      [ Located.At (loc, Errors.UndeclaredIdentifier id) ]
-  | Syntax.BinOpExpr (_, lhs, rhs) -> check_expr env lhs @ check_expr env rhs
-  | Syntax.UnaryOpExpr (_, rhs) -> check_expr env rhs
-  | _ -> []
+module StringMap = Map.Make (String)
 
-let rec check_stmt env (Located.At (loc, stmt)) =
+type t = {
+  env : Syntax.mut StringMap.t;
+  errors : Errors.t Located.t list;
+  in_loop : bool;
+}
+
+let add_err st err = { st with errors = err :: st.errors }
+
+let rec check_expr st (Located.At (loc, expr)) =
+  match expr with
+  | Syntax.IdentExpr id when not (StringMap.mem id st.env) ->
+      add_err st (At (loc, UndeclaredIdentifier id))
+  | Syntax.BinOpExpr (_, lhs, rhs) ->
+      let st' = check_expr st lhs in
+      check_expr st' rhs
+  | Syntax.UnaryOpExpr (_, rhs) -> check_expr st rhs
+  | _ -> st
+
+let rec check_stmt st (Located.At (loc, stmt)) =
   match stmt with
   | Syntax.DeclStmt (mut, At (_, id), rhs) ->
-      let res =
-        (if Hashtbl.mem env id then
-           [ Located.At (loc, Errors.Redeclaration id) ]
-         else [])
-        @ check_expr env rhs
+      let st' =
+        match StringMap.mem id st.env with
+        | true -> add_err st (At (loc, Redeclaration id))
+        | false -> st
       in
-      let () = Hashtbl.add env id mut in
-      res
+      let st'' = check_expr st' rhs in
+      { st'' with env = StringMap.add id mut st''.env }
   | Syntax.AssignStmt (At (loc, id), rhs) ->
-      (match Hashtbl.find_opt env id with
-        | Some Syntax.Val -> [ Located.At (loc, Errors.AssignToImmutable id) ]
-        | Some Syntax.Var -> []
-        | None -> [ Located.At (loc, Errors.UndeclaredIdentifier id) ])
-      @ check_expr env rhs
-  | Syntax.ExprStmt _ -> [ At (loc, Errors.ExpressionResultUnused) ]
-  | Syntax.ReturnStmt lexpr -> check_expr env lexpr
-  | _ -> []
+      let st' =
+        match StringMap.find_opt id st.env with
+        | Some Syntax.Val -> add_err st (At (loc, AssignToImmutable id))
+        | Some Syntax.Var -> st
+        | None -> add_err st (At (loc, UndeclaredIdentifier id))
+      in
+      check_expr st' rhs
+  | Syntax.ExprStmt _ -> add_err st (At (loc, Errors.ExpressionResultUnused))
+  | Syntax.ReturnStmt lexpr -> check_expr st lexpr
+  | Syntax.IfStmt (cond, then_stmt, else_opt) -> (
+      let st' = check_expr st cond in
+      let st'' = check_stmt st' then_stmt in
+      match else_opt with
+      | Some else_stmt -> check_stmt st'' else_stmt
+      | None -> st'')
+  | Syntax.WhileStmt (cond, body) ->
+      let in_loop = st.in_loop in
+      let st' = check_expr st cond in
+      let st'' = check_stmt { st' with in_loop = true } body in
+      { st'' with in_loop }
+  | Syntax.ContinueStmt ->
+      if st.in_loop then st
+      else add_err st (At (loc, Errors.ContinueOutsideLoop))
+  | Syntax.BreakStmt ->
+      if st.in_loop then st else add_err st (At (loc, Errors.BreakOutsideLoop))
+  | _ -> st
 
-let check_ast (Located.At (_, tree)) =
-  let env = Hashtbl.create 16 in
-  List.fold_left (fun acc stmt -> acc @ check_stmt env stmt) [] tree
+let check_ast (Located.At (loc, tree)) =
+  let st = { env = StringMap.empty; errors = []; in_loop = false } in
+  let st' = List.fold_left (fun st stmt -> check_stmt st stmt) st tree in
+  st'.errors
