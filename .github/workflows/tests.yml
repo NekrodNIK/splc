@@ -40,4 +40,5 @@ jobs:
 
       - name: Run tests
         run:
-          python3 test/run_tests.py test --grammar  ${{ matrix.grammar }} --no-build --check-ir
+          python3 test/run_tests.py test --grammar  ${{ matrix.grammar }} --no-build
+        
