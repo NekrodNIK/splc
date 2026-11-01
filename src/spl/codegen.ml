@@ -6,6 +6,8 @@ type t = {
   builder : Llvm.llbuilder;
   cur_module : Llvm.llmodule;
   mutable cur_func : Llvm.llvalue;
+  mutable cond_bb : Llvm.llbasicblock;
+  mutable end_bb : Llvm.llbasicblock;
   names : (string, Llvm.llvalue) Hashtbl.t;
 }
 
@@ -25,10 +27,16 @@ let rec gen_expr st (Located.At (_, expr)) =
   | Syntax.UnaryOpExpr (unop, expr) ->
       let build = function
         | Syntax.NegOp -> Llvm.build_neg
-        | Syntax.NotOp -> Fun.compose Llvm.build_not (gen_cast_to_bool st)
+        | Syntax.NotOp ->
+            fun expr _ builder ->
+              let res =
+                (Fun.compose Llvm.build_not (gen_cast_to_bool st))
+                  expr "" builder
+              in
+              Llvm.build_zext res (Llvm.i64_type st.context) "" builder
       in
       build unop (gen_expr st expr) "" st.builder
-  | Syntax.BinOpExpr (binop, lhs, rhs) ->
+  | Syntax.BinOpExpr (binop, lhs, rhs) -> (
       let build lhs_val rhs_val =
         let lhs_val', rhs_val' =
           match binop with
@@ -51,8 +59,11 @@ let rec gen_expr st (Located.At (_, expr)) =
         | Syntax.NeOp -> Llvm.(build_icmp Icmp.Ne))
           lhs_val' rhs_val'
       in
-      build (gen_expr st lhs) (gen_expr st rhs) "" st.builder |> fun x ->
-      Llvm.build_intcast x (Llvm.i64_type st.context) "" st.builder
+      let res = build (gen_expr st lhs) (gen_expr st rhs) "" st.builder in
+      match binop with
+      | AndOp | OrOp | LtOp | LeOp | GtOp | GeOp | EqOp | NeOp ->
+          Llvm.build_zext res (Llvm.i64_type st.context) "" st.builder
+      | _ -> res)
   | _ -> assert false
 
 and gen_cast_to_bool st value =
@@ -60,21 +71,22 @@ and gen_cast_to_bool st value =
 
 and const_zero st = Llvm.(const_of_int64 (i64_type st.context) 0L false)
 
+let is_terminated b =
+  Option.is_some (Llvm.block_terminator (Llvm.insertion_block b))
+
 let rec gen_stmt st (Located.At (_, stmt)) =
   match stmt with
   | Syntax.BlockStmt stmts -> List.iter (fun stmt -> gen_stmt st stmt) stmts
   | Syntax.IfStmt (cond, then_stmt, else_opt) ->
       let append_block name = Llvm.append_block st.context name st.cur_func in
 
-      let cond_instr = gen_expr st cond in
+      let cond_instr = gen_cast_to_bool st (gen_expr st cond) in
       let then_bb = append_block "then" in
       let else_bb =
         append_block (if Option.is_some else_opt then "else" else "ifcont")
       in
       let ifcont_bb =
-        match else_opt with
-        | Some _ -> append_block "ifcont"
-        | _ -> else_bb
+        match else_opt with Some _ -> append_block "ifcont" | _ -> else_bb
       in
 
       let _ = Llvm.build_cond_br cond_instr then_bb else_bb st.builder in
@@ -82,7 +94,8 @@ let rec gen_stmt st (Located.At (_, stmt)) =
       let build_branch bb stmt =
         Llvm.position_at_end bb st.builder;
         gen_stmt st stmt;
-        Llvm.build_br ifcont_bb st.builder
+        if not (is_terminated st.builder) then
+          ignore @@ Llvm.build_br ifcont_bb st.builder
       in
 
       let _ = build_branch then_bb then_stmt in
@@ -93,17 +106,22 @@ let rec gen_stmt st (Located.At (_, stmt)) =
       let cond_bb = Llvm.append_block st.context "" st.cur_func in
       let body_bb = Llvm.append_block st.context "" st.cur_func in
       let end_bb = Llvm.append_block st.context "" st.cur_func in
+      st.cond_bb <- cond_bb;
+      st.end_bb <- end_bb;
 
       let _ = Llvm.build_br cond_bb st.builder in
       let () = Llvm.position_at_end cond_bb st.builder in
-      let cond_instr = gen_expr st cond in
+      let cond_instr = gen_cast_to_bool st (gen_expr st cond) in
       let _ = Llvm.build_cond_br cond_instr body_bb end_bb st.builder in
 
       let () = Llvm.position_at_end body_bb st.builder in
       let _ = gen_stmt st body_stmt in
-      let _ = Llvm.build_br cond_bb st.builder in
+      if not (is_terminated st.builder) then
+        ignore @@ Llvm.build_br cond_bb st.builder;
 
       Llvm.position_at_end end_bb st.builder
+  | Syntax.ContinueStmt -> ignore @@ Llvm.build_br st.cond_bb st.builder
+  | Syntax.BreakStmt -> ignore @@ Llvm.build_br st.end_bb st.builder
   | Syntax.ReturnStmt expr ->
       ignore @@ Llvm.build_ret (gen_expr st expr) st.builder
   | Syntax.DeclStmt (_, At (_, id), expr) ->
@@ -115,17 +133,10 @@ let rec gen_stmt st (Located.At (_, stmt)) =
       ignore @@ Llvm.build_store (gen_expr st expr) ptr st.builder
   | _ -> assert false
 
-let gen_func st =
-  let func_type = Llvm.function_type (Llvm.i64_type st.context) [||] in
-  let func = Llvm.define_function "main" func_type st.cur_module in
-  let bb = Llvm.entry_block func in
-  let () = Llvm.position_at_end bb st.builder in
-  func
-
 let gen_ast st (Located.At (_, ast)) =
-  let _main = gen_func st in
-  let () = st.cur_func <- _main in
-  List.iter (Fun.compose ignore (gen_stmt st)) ast
+  let () = List.iter (Fun.compose ignore (gen_stmt st)) ast in
+  if not (is_terminated st.builder) then
+    ignore @@ Llvm.build_ret (const_zero st) st.builder
 
 let rec emit ~ast ~module_name ~output_path =
   let () = Llvm_all_backends.initialize () in
@@ -133,13 +144,21 @@ let rec emit ~ast ~module_name ~output_path =
   let cur_module = Llvm.create_module context module_name in
   let builder = Llvm.builder context in
   let names = Hashtbl.create 16 in
+
+  let func_type = Llvm.function_type (Llvm.i64_type context) [||] in
+  let func = Llvm.define_function "main" func_type cur_module in
+  let bb = Llvm.entry_block func in
+  let () = Llvm.position_at_end bb builder in
+
   let st =
     {
       context;
       cur_module;
-      cur_func = Llvm.const_null (Llvm.i64_type context);
+      cur_func = func;
       builder;
       names;
+      cond_bb = bb;
+      end_bb = bb;
     }
   in
 
