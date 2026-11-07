@@ -1,4 +1,3 @@
-(* FIXME *)
 type ('a, 'r) parser =
   state -> ('a -> state -> 'r) -> (error -> state -> 'r) -> 'r
 
@@ -27,9 +26,10 @@ let ( <|> ) par1 par2 =
 
 let empty =
  fun st _ err ->
-  Fun.flip err st
+  err
     (let loc = Located.get_loc st.last_token in
-     Located.At (loc, Errors.Expected { expected = "bebebe"; actual = "empty" }))
+     Located.At (loc, Errors.Expected { expected = "empty"; actual = "bebebe" }))
+    st
 
 let not_followed_by par =
  fun st ok err -> par st (fun _ _ -> empty st ok err) (fun _ _ -> ok () st)
