@@ -1,26 +1,24 @@
-; ModuleID = 'spl'
-source_filename = "spl"
+; ModuleID = 'test.spl'
+source_filename = "test.spl"
 target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-unknown-linux-gnu"
 
 define i64 @main() {
 entry:
-  br i1 true, label %then, label %ifmerge
+  br i1 true, label %if.then, label %ifcont
 
-then:                                             ; preds = %entry
-  br i1 false, label %then1, label %else
+if.then:                                          ; preds = %entry
+  br i1 false, label %if.then1, label %if.else
 
-ifmerge:                                          ; preds = %ifmerge2, %entry
+ifcont:                                           ; preds = %if.cont, %entry
   ret i64 0
 
-then1:                                            ; preds = %then
+if.then1:                                         ; preds = %if.then
   ret i64 1
-  br label %ifmerge2
 
-ifmerge2:                                         ; preds = %else, %then1
-  br label %ifmerge
+if.cont:                                          ; No predecessors!
+  br label %ifcont
 
-else:                                             ; preds = %then
+if.else:                                          ; preds = %if.then
   ret i64 2
-  br label %ifmerge2
 }

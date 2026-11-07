@@ -90,7 +90,7 @@ let rec gen_stmt st (Located.At (_, stmt)) =
         let else_bb, ifcont_bb =
           match else_opt with
           | Some _ -> (append_block "if.else", append_block "if.cont")
-          | None -> (fun x -> (x, x)) (append_block "ifcont")
+          | None -> (fun x -> (x, x)) (append_block "if.cont")
         in
 
         let cond_val = gen_to_bool st (gen_expr st cond) in
