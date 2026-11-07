@@ -1,5 +1,5 @@
-; ModuleID = 'spl'
-source_filename = "spl"
+; ModuleID = 'test.spl'
+source_filename = "test.spl"
 target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-unknown-linux-gnu"
 
@@ -7,36 +7,35 @@ define i64 @main() {
 entry:
   %x = alloca i64, align 8
   store i64 0, ptr %x, align 8
-  br label %while_header
+  br label %while.cond
 
-while_header:                                     ; preds = %ifmerge, %entry
-  %x1 = load i64, ptr %x, align 8
-  %cmptmp = icmp slt i64 %x1, 10
-  %zexttmp = zext i1 %cmptmp to i64
-  %whilecond = icmp ne i64 %zexttmp, 0
-  br i1 %whilecond, label %while_body, label %while_end
+while.cond:                                       ; preds = %if.cont, %entry
+  %0 = load i64, ptr %x, align 8
+  %1 = icmp slt i64 %0, 10
+  %2 = zext i1 %1 to i64
+  %3 = icmp ne i64 %2, 0
+  br i1 %3, label %while.body, label %while.end
 
-while_body:                                       ; preds = %while_header
-  %x2 = load i64, ptr %x, align 8
-  %cmptmp3 = icmp slt i64 %x2, 5
-  %zexttmp4 = zext i1 %cmptmp3 to i64
-  %ifcond = icmp ne i64 %zexttmp4, 0
-  br i1 %ifcond, label %then, label %else
+while.body:                                       ; preds = %while.cond
+  %4 = load i64, ptr %x, align 8
+  %5 = icmp slt i64 %4, 5
+  %6 = zext i1 %5 to i64
+  %7 = icmp ne i64 %6, 0
+  br i1 %7, label %if.then, label %if.else
 
-while_end:                                        ; preds = %else, %while_header
-  %x6 = load i64, ptr %x, align 8
-  ret i64 %x6
+while.end:                                        ; preds = %if.else, %while.cond
+  %8 = load i64, ptr %x, align 8
+  ret i64 %8
 
-then:                                             ; preds = %while_body
-  %x5 = load i64, ptr %x, align 8
-  %addtmp = add i64 %x5, 1
-  store i64 %addtmp, ptr %x, align 8
-  br label %ifmerge
+if.then:                                          ; preds = %while.body
+  %9 = load i64, ptr %x, align 8
+  %10 = add i64 %9, 1
+  store i64 %10, ptr %x, align 8
+  br label %if.cont
 
-ifmerge:                                          ; preds = %else, %then
-  br label %while_header
+if.cont:                                          ; preds = %if.then
+  br label %while.cond
 
-else:                                             ; preds = %while_body
-  br label %while_end
-  br label %ifmerge
+if.else:                                          ; preds = %while.body
+  br label %while.end
 }
