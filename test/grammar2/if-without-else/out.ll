@@ -5,11 +5,11 @@ target triple = "x86_64-unknown-linux-gnu"
 
 define i64 @main() {
 entry:
-  br i1 true, label %if.then, label %ifcont
+  br i1 true, label %if.then, label %if.cont
 
 if.then:                                          ; preds = %entry
   ret i64 42
 
-ifcont:                                           ; preds = %entry
+if.cont:                                          ; preds = %entry
   ret i64 0
 }

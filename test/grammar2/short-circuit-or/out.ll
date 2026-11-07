@@ -22,13 +22,13 @@ entry:
   %8 = or i1 %7, %6
   %9 = zext i1 %8 to i64
   %10 = icmp ne i64 %9, 0
-  br i1 %10, label %if.then, label %ifcont
+  br i1 %10, label %if.then, label %if.cont
 
 if.then:                                          ; preds = %entry
   store i64 1, ptr %r, align 8
-  br label %ifcont
+  br label %if.cont
 
-ifcont:                                           ; preds = %if.then, %entry
+if.cont:                                          ; preds = %if.then, %entry
   %11 = load i64, ptr %r, align 8
   ret i64 %11
 }

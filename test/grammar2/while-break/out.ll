@@ -9,7 +9,7 @@ entry:
   store i64 0, ptr %i, align 8
   br label %while.cond
 
-while.cond:                                       ; preds = %ifcont, %entry
+while.cond:                                       ; preds = %if.cont, %entry
   %0 = load i64, ptr %i, align 8
   %1 = icmp slt i64 %0, 10
   %2 = zext i1 %1 to i64
@@ -21,7 +21,7 @@ while.body:                                       ; preds = %while.cond
   %5 = icmp eq i64 %4, 5
   %6 = zext i1 %5 to i64
   %7 = icmp ne i64 %6, 0
-  br i1 %7, label %if.then, label %ifcont
+  br i1 %7, label %if.then, label %if.cont
 
 while.end:                                        ; preds = %if.then, %while.cond
   %8 = load i64, ptr %i, align 8
@@ -30,7 +30,7 @@ while.end:                                        ; preds = %if.then, %while.con
 if.then:                                          ; preds = %while.body
   br label %while.end
 
-ifcont:                                           ; preds = %while.body
+if.cont:                                          ; preds = %while.body
   %9 = load i64, ptr %i, align 8
   %10 = add i64 %9, 1
   store i64 %10, ptr %i, align 8
