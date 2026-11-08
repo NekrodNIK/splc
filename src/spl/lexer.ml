@@ -83,6 +83,8 @@ let read_number st : Token.t res =
 let read_ident st : Token.t res =
   let+ str = eat_while st (fun ch -> is_digit ch || is_non_digit ch) in
   match str with
+  | "extern" -> Token.Extern
+  | "def" -> Token.Def
   | "val" -> Token.Val
   | "var" -> Token.Var
   | "return" -> Token.Return
@@ -117,6 +119,7 @@ let read_token st : Token.t Located.t res =
     | '*' -> one Token.Star
     | '/' -> one Token.Slash
     | ';' -> one Token.Semi
+    | ',' -> one Token.Comma
     | '=' when next_is st '=' -> two Token.Eq
     | '=' -> one Token.Assign
     | '<' when next_is st '=' -> two Token.Le

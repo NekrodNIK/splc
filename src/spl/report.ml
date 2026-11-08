@@ -38,7 +38,10 @@ module TokenReport = struct
       | Gt -> "GT"
       | Ge -> "GE"
       | Not -> "NOT"
+      | Extern -> "EXTERN"
+      | Def -> "DEF"
       | Error _ -> "ERROR"
+      | Comma -> "COMMA"
       | Eof -> "EOF"
     in
     `Assoc

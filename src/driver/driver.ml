@@ -83,7 +83,7 @@ let cmd =
   and+ _ =
     Arg.(
       value
-      & opt (enum [ ("1", 1); ("2", 2) ]) 2
+      & opt (enum [ ("3", 3) ]) 3
       & info [ "g" ])
   in
   splc src_path (Option.get out_path) lr pr emit_llvm
