@@ -233,7 +233,7 @@ let parse_fun_top_decl =
   let* (At (loc, _)) = expect Token.Def in
   let* fun_ident = parse_ident in
   let* params = parse_params in
-  let+ stmt = parse_stmt () in
+  let+ stmt = parse_block_stmt () in
   Located.At (loc, Syntax.FuncTopDecl (fun_ident, params, stmt))
 
 let parse_top_decl = parse_extern_top_decl <|> parse_fun_top_decl

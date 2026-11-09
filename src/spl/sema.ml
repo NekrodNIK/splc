@@ -1,3 +1,4 @@
+(* FIXME: refactor *)
 module StringMap = Map.Make (String)
 
 type t = { env : Syntax.mut StringMap.t; errors : Errors.t Located.t list }
@@ -6,7 +7,7 @@ let empty = { env = StringMap.empty; errors = [] }
 let add_error loc err st = { st with errors = At (loc, err) :: st.errors }
 let bind_id id mut st = { st with env = StringMap.add id mut st.env }
 
-let check_bound id loc st =
+let check_declarable id loc st =
   if StringMap.mem id st.env then add_error loc (Redeclaration id) st else st
 
 let check_assignable id loc st =
@@ -14,6 +15,11 @@ let check_assignable id loc st =
   | None -> add_error loc (UndeclaredIdentifier id) st
   | Some Syntax.Val -> add_error loc (AssignToImmutable id) st
   | Some _ -> st
+
+let check_unbound id loc st =
+  match StringMap.find_opt id st.env with
+  | Some _ -> st
+  | None -> add_error loc (UndeclaredIdentifier id) st
 
 let rec check_expr (Located.At (loc, expr)) st =
   match expr with
@@ -26,7 +32,7 @@ let rec check_expr (Located.At (loc, expr)) st =
 let rec check_stmt ?(in_loop = false) (Located.At (loc, stmt)) st =
   match stmt with
   | Syntax.DeclStmt (mut, At (_, id), rhs) ->
-      check_bound id loc st |> check_expr rhs |> bind_id id mut
+      check_declarable id loc st |> check_expr rhs |> bind_id id mut
   | Syntax.AssignStmt (At (loc, id), rhs) ->
       check_assignable id loc st |> check_expr rhs
   | Syntax.ExprStmt _ -> add_error loc ExpressionResultUnused st
@@ -49,12 +55,16 @@ let rec check_stmt ?(in_loop = false) (Located.At (loc, stmt)) st =
       { st with errors = st'.errors }
   | _ -> st
 
-(* TODO *)
-let rec check_top_decl (Located.At (loc, top_decl)) st =
+let check_top_decl (Located.At (loc, top_decl)) st =
   match top_decl with
-  | Syntax.FuncTopDecl (_, _, stmt) -> check_stmt stmt st
-  | _ -> st
+  | Syntax.FuncTopDecl (At (loc, id), _, stmt) ->
+      check_declarable id loc st |> bind_id id Val |> check_stmt stmt
+  | Syntax.ExternTopDecl (At (loc, id), _) -> check_declarable id loc st
+
+let check_main_declared st = check_unbound "main" Located.zero_location st
 
 let check_ast (Located.At (loc, tree)) =
-  let st = List.fold_left (Fun.flip check_top_decl) empty tree in
+  let st =
+    List.fold_left (Fun.flip check_top_decl) empty tree |> check_main_declared
+  in
   st.errors
