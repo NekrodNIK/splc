@@ -16,7 +16,7 @@ let check_assignable id loc st =
   | Some Syntax.Val -> add_error loc (AssignToImmutable id) st
   | Some _ -> st
 
-let check_unbound id loc st =
+let check_bounded id loc st =
   match StringMap.find_opt id st.env with
   | Some _ -> st
   | None -> add_error loc (UndeclaredIdentifier id) st
@@ -55,13 +55,29 @@ let rec check_stmt ?(in_loop = false) (Located.At (loc, stmt)) st =
       { st with errors = st'.errors }
   | _ -> st
 
+let rec always_returns (Located.At (loc, stmt)) =
+  match stmt with
+  | Syntax.ReturnStmt _ -> true
+  | Syntax.IfStmt (cond, then_stmt, Some else_stmt) ->
+      always_returns then_stmt && always_returns else_stmt
+  | Syntax.IfStmt (cond, then_stmt, None) -> false
+  | Syntax.BlockStmt stmts -> List.exists always_returns stmts
+  | _ -> false
+
+let check_always_returns stmt st =
+  if always_returns stmt then st
+  else add_error (Located.get_loc stmt) Errors.MissingReturn st
+
 let check_top_decl (Located.At (loc, top_decl)) st =
   match top_decl with
   | Syntax.FuncTopDecl (At (loc, id), _, stmt) ->
-      check_declarable id loc st |> bind_id id Val |> check_stmt stmt
+      check_declarable id loc st
+      |> bind_id id Val
+      |> check_stmt stmt
+      |> check_always_returns stmt
   | Syntax.ExternTopDecl (At (loc, id), _) -> check_declarable id loc st
 
-let check_main_declared st = check_unbound "main" Located.zero_location st
+let check_main_declared st = check_bounded "main" Located.zero_location st
 
 let check_ast (Located.At (loc, tree)) =
   let st =
