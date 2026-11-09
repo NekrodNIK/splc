@@ -174,7 +174,7 @@ let rec emit ~ast ~module_name ~output_path =
   in
 
   let* () = set_target st in
-  gen_ast st ast;
+  (* let () = gen_ast st ast in *)
 
   try Ok (Llvm.print_module output_path st.cur_module)
   with Llvm.IoError s -> Error (WriteToFileError s)

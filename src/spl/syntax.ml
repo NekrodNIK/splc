@@ -16,13 +16,9 @@ type binop =
 type unop = NegOp | NotOp [@@deriving show]
 type mut = Val | Var [@@deriving show]
 
-type 'id expr =
-  | BinOpExpr of binop * 'id lexpr * 'id lexpr
-  | UnaryOpExpr of unop * 'id lexpr
-  | IdentExpr of 'id
-  | IntLitExpr of int64
-  | BoolLitExpr of bool
-  | ErrorExpr of lerror
+type 'id topDecl =
+  | ExternTopDecl of 'id lid * 'id lid list
+  | FuncTopDecl of 'id lid * 'id lid list * 'id lstmt
 [@@deriving show]
 
 and 'id stmt =
@@ -38,12 +34,23 @@ and 'id stmt =
   | ErrorStmt of lerror
 [@@deriving show]
 
-and 'id lexpr = 'id expr Located.t [@@deriving show]
+and 'id expr =
+  | BinOpExpr of binop * 'id lexpr * 'id lexpr
+  | UnaryOpExpr of unop * 'id lexpr
+  | IdentExpr of 'id
+  | IntLitExpr of int64
+  | BoolLitExpr of bool
+  | CallExpr of 'id lexpr * 'id lexpr list
+  | ErrorExpr of lerror
+[@@deriving show]
+
+and 'id ltopDecl = 'id topDecl Located.t [@@deriving show]
 and 'id lstmt = 'id stmt Located.t [@@deriving show]
+and 'id lexpr = 'id expr Located.t [@@deriving show]
 and lerror = Errors.t Located.t [@@deriving show]
 and 'id lid = 'id Located.t [@@deriving show]
 
-type 'id t = 'id lstmt list [@@deriving show]
+type 'id t = 'id ltopDecl list [@@deriving show]
 
 let binop_precedence = function
   | AndOp | OrOp -> 1

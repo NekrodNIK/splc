@@ -49,6 +49,12 @@ let rec check_stmt ?(in_loop = false) (Located.At (loc, stmt)) st =
       { st with errors = st'.errors }
   | _ -> st
 
+(* TODO *)
+let rec check_top_decl (Located.At (loc, top_decl)) st =
+  match top_decl with
+  | Syntax.FuncTopDecl (_, _, stmt) -> check_stmt stmt st
+  | _ -> st
+
 let check_ast (Located.At (loc, tree)) =
-  let st = List.fold_left (Fun.flip check_stmt) empty tree in
+  let st = List.fold_left (Fun.flip check_top_decl) empty tree in
   st.errors
