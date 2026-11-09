@@ -44,6 +44,9 @@ let rec check_stmt ?(in_loop = false) (Located.At (loc, stmt)) st =
       if not in_loop then add_error loc ContinueOutsideLoop st else st
   | Syntax.BreakStmt ->
       if not in_loop then add_error loc BreakOutsideLoop st else st
+  | Syntax.BlockStmt stmts ->
+      let st' = List.fold_left (Fun.flip (check_stmt ~in_loop)) st stmts in
+      { st with errors = st'.errors }
   | _ -> st
 
 let check_ast (Located.At (loc, tree)) =
