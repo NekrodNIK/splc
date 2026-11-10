@@ -11,24 +11,30 @@ entry:
   store i64 0, ptr %y, align 8
   %r = alloca i64, align 8
   store i64 0, ptr %r, align 8
-  %0 = load i64, ptr %y, align 8
-  %1 = icmp eq i64 %0, 0
-  %2 = zext i1 %1 to i64
-  %3 = load i64, ptr %x, align 8
-  %4 = icmp eq i64 %3, 0
-  %5 = zext i1 %4 to i64
-  %6 = icmp ne i64 %2, 0
-  %7 = icmp ne i64 %5, 0
-  %8 = and i1 %7, %6
-  %9 = zext i1 %8 to i64
-  %10 = icmp ne i64 %9, 0
-  br i1 %10, label %if.then, label %if.cont
+  %x1 = load i64, ptr %x, align 8
+  %cmptmp = icmp eq i64 %x1, 0
+  %zexttmp = zext i1 %cmptmp to i64
+  %lbool = icmp ne i64 %zexttmp, 0
+  br i1 %lbool, label %logic.rhs, label %logic.end
 
-if.then:                                          ; preds = %entry
+logic.rhs:                                        ; preds = %entry
+  %y2 = load i64, ptr %y, align 8
+  %cmptmp3 = icmp eq i64 %y2, 0
+  %zexttmp4 = zext i1 %cmptmp3 to i64
+  %rbool = icmp ne i64 %zexttmp4, 0
+  br label %logic.end
+
+logic.end:                                        ; preds = %logic.rhs, %entry
+  %logictmp = phi i1 [ false, %entry ], [ %rbool, %logic.rhs ]
+  %logicext = zext i1 %logictmp to i64
+  %ifcond = icmp ne i64 %logicext, 0
+  br i1 %ifcond, label %then, label %ifmerge
+
+then:                                             ; preds = %logic.end
   store i64 1, ptr %r, align 8
   br label %if.cont
 
-if.cont:                                          ; preds = %if.then, %entry
-  %11 = load i64, ptr %r, align 8
-  ret i64 %11
+ifmerge:                                          ; preds = %then, %logic.end
+  %r5 = load i64, ptr %r, align 8
+  ret i64 %r5
 }
