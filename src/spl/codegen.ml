@@ -59,7 +59,7 @@ and gen_binop st op lhs_expr rhs_expr =
       if is_and then Llvm.build_cond_br lhs rhs_bb end_bb st.builder
       else Llvm.build_cond_br lhs end_bb rhs_bb st.builder
     in
-    let short_value = const_i1 st is_and in
+    let short_value = const_i1 st (not is_and) in
 
     Llvm.position_at_end rhs_bb st.builder;
     let rhs = to_i1 st (gen_expr st rhs_expr) in
@@ -109,8 +109,8 @@ let rec gen_stmt st (Located.At (_, stmt)) =
         let then_bb = append_block st "if.then" in
         let else_bb, ifcont_bb =
           match else_opt with
-          | Some _ -> (append_block st "if.else", append_block st "if.end")
-          | None -> (fun x -> (x, x)) (append_block st "if.end")
+          | Some _ -> (append_block st "if.else", append_block st "if.cont")
+          | None -> (fun x -> (x, x)) (append_block st "if.cont")
         in
 
         let cond = to_i1 st (gen_expr st cond_expr) in
