@@ -1,12 +1,13 @@
 open Result.Syntax
 
+type loop_context = { cond_bb : Llvm.llbasicblock; end_bb : Llvm.llbasicblock }
+
 type t = {
   context : Llvm.llcontext;
   builder : Llvm.llbuilder;
   cur_module : Llvm.llmodule;
   mutable cur_func : Llvm.llvalue;
-  mutable loop_cond_bb : Llvm.llbasicblock;
-  mutable loop_end_bb : Llvm.llbasicblock;
+  mutable loop_context : loop_context;
   names : (string, Llvm.llvalue) Hashtbl.t;
 }
 
@@ -17,17 +18,15 @@ let const_i64 st x = Llvm.(const_of_int64 (i64_type st.context) x false)
 let const_i1 st x =
   Llvm.(const_of_int64 (i1_type st.context) (if x then 1L else 0L) false)
 
-let gen_to_int64 st value =
-  Llvm.build_zext value (Llvm.i64_type st.context) "" st.builder
-
-let gen_to_bool st value =
-  Llvm.(build_icmp Icmp.Ne value (const_i64 st 0L) "" st.builder)
+let to_i64 st v = Llvm.(build_zext v (i64_type st.context) "" st.builder)
+let to_i1 st v = Llvm.(build_icmp Icmp.Ne v (const_i64 st 0L) "" st.builder)
+let cur_block st = Llvm.insertion_block st.builder
+let append_block st name = Llvm.append_block st.context name st.cur_func
 
 let gen_unop st op rhs =
   match op with
   | Syntax.NegOp -> Llvm.build_neg rhs "" st.builder
-  | Syntax.NotOp ->
-      Llvm.build_not (gen_to_bool st rhs) "" st.builder |> gen_to_int64 st
+  | Syntax.NotOp -> Llvm.build_not (to_i1 st rhs) "" st.builder |> to_i64 st
 
 let rec gen_expr st (Located.At (_, expr)) =
   match expr with
@@ -38,66 +37,53 @@ let rec gen_expr st (Located.At (_, expr)) =
       Llvm.build_load (Llvm.i64_type st.context) ptr "" st.builder
   | Syntax.BinOpExpr (binop, lhs, rhs) -> gen_binop st binop lhs rhs
   | Syntax.UnaryOpExpr (unop, rhs) -> gen_unop st unop (gen_expr st rhs)
-  | _ -> assert false
+  | _ -> failwith "unsupported expr"
 
 and gen_binop st op lhs_expr rhs_expr =
-  let icmp c x y name b =
-    Llvm.build_icmp c
-      (x |> gen_expr st)
-      (y |> gen_expr st)
-      name st.builder
-    |> gen_to_int64 st
+  let icmp c =
+    Llvm.build_icmp c (gen_expr st lhs_expr) (gen_expr st rhs_expr) ""
+      st.builder
+    |> to_i64 st
   in
-  let eager c x y name b = c (gen_expr st x) (gen_expr st y) name b in
-  let short_circuit c x y name b =
-    let lhs = gen_to_bool st (gen_expr st x) in
-    let append_block () = Llvm.append_block st.context "" st.cur_func in
-    let then_bb = append_block () in
-    let else_bb = append_block () in
-    let cont_bb = append_block () in
+  let eager build =
+    build (gen_expr st lhs_expr) (gen_expr st rhs_expr) "" st.builder
+  in
+  let short_circuit ~is_and =
+    let lhs = to_i1 st (gen_expr st lhs_expr) in
+    let lhs_bb = cur_block st in
 
-    let rhs =
-      match op with
-      | Syntax.AndOp ->
-          let _ = Llvm.build_cond_br lhs then_bb else_bb b in
-          Llvm.position_at_end then_bb st.builder;
-          let rhs1 = gen_to_bool st (gen_expr st y) in
-          ignore (Llvm.build_br cont_bb b);
-          Llvm.position_at_end else_bb st.builder;
-          ignore (Llvm.build_br cont_bb b);
-          [ (rhs1, then_bb); (const_i1 st false, else_bb) ]
-      | Syntax.OrOp ->
-          let _ =
-            Llvm.build_cond_br (Llvm.build_not lhs "" b) then_bb else_bb b
-          in
-          Llvm.position_at_end then_bb st.builder;
-          let rhs1 = gen_to_bool st (gen_expr st y) in
-          ignore (Llvm.build_br cont_bb b);
-          Llvm.position_at_end else_bb st.builder;
-          ignore (Llvm.build_br cont_bb b);
-          [ (rhs1, then_bb); (const_i1 st true, else_bb) ]
-      | _ -> assert false
+    let rhs_bb = append_block st "logic.rhs" in
+    let end_bb = append_block st "logic.end" in
+
+    let _ =
+      if is_and then Llvm.build_cond_br lhs rhs_bb end_bb st.builder
+      else Llvm.build_cond_br lhs end_bb rhs_bb st.builder
     in
-    Llvm.position_at_end cont_bb st.builder;
-    Llvm.build_phi rhs name b |> gen_to_int64 st
+    let short_value = const_i1 st is_and in
+
+    Llvm.position_at_end rhs_bb st.builder;
+    let rhs = to_i1 st (gen_expr st rhs_expr) in
+    let rhs_bb = cur_block st in
+    let _ = Llvm.build_br end_bb st.builder in
+
+    Llvm.position_at_end end_bb st.builder;
+    Llvm.build_phi [ (short_value, lhs_bb); (rhs, rhs_bb) ] "" st.builder
+    |> to_i64 st
   in
 
-  let build =
-    match op with
-    | Syntax.AddOp -> eager Llvm.build_add
-    | Syntax.SubOp -> eager Llvm.build_sub
-    | Syntax.MulOp -> eager Llvm.build_mul
-    | Syntax.DivOp -> eager Llvm.build_sdiv
-    | Syntax.AndOp -> short_circuit Llvm.build_add
-    | Syntax.OrOp -> short_circuit Llvm.build_or
-    | Syntax.LtOp -> icmp Llvm.Icmp.Slt
-    | Syntax.LeOp -> icmp Llvm.Icmp.Sle
-    | Syntax.GtOp -> icmp Llvm.Icmp.Sgt
-    | Syntax.GeOp -> icmp Llvm.Icmp.Sge
-    | Syntax.EqOp -> icmp Llvm.Icmp.Eq
-    | Syntax.NeOp -> icmp Llvm.Icmp.Ne
-  in
-  build lhs_expr rhs_expr "" st.builder
+  match op with
+  | Syntax.AddOp -> eager Llvm.build_add
+  | Syntax.SubOp -> eager Llvm.build_sub
+  | Syntax.MulOp -> eager Llvm.build_mul
+  | Syntax.DivOp -> eager Llvm.build_sdiv
+  | Syntax.AndOp -> short_circuit ~is_and:true
+  | Syntax.OrOp -> short_circuit ~is_and:false
+  | Syntax.LtOp -> icmp Llvm.Icmp.Slt
+  | Syntax.LeOp -> icmp Llvm.Icmp.Sle
+  | Syntax.GtOp -> icmp Llvm.Icmp.Sgt
+  | Syntax.GeOp -> icmp Llvm.Icmp.Sge
+  | Syntax.EqOp -> icmp Llvm.Icmp.Eq
+  | Syntax.NeOp -> icmp Llvm.Icmp.Ne
 
 let block_is_open st =
   st.builder |> Llvm.insertion_block |> Llvm.block_terminator |> Option.is_none
@@ -115,45 +101,43 @@ let rec gen_stmt st (Located.At (_, stmt)) =
         ignore @@ Llvm.build_store (gen_expr st expr) ptr st.builder
     | Syntax.ReturnStmt expr ->
         ignore @@ Llvm.build_ret (gen_expr st expr) st.builder
-    | Syntax.ContinueStmt -> ignore @@ Llvm.build_br st.loop_cond_bb st.builder
-    | Syntax.BreakStmt -> ignore @@ Llvm.build_br st.loop_end_bb st.builder
-    | Syntax.IfStmt (cond, then_stmt, else_opt) ->
-        let append_block name = Llvm.append_block st.context name st.cur_func in
-
-        let then_bb = append_block "if.then" in
+    | Syntax.ContinueStmt ->
+        ignore @@ Llvm.build_br st.loop_context.cond_bb st.builder
+    | Syntax.BreakStmt ->
+        ignore @@ Llvm.build_br st.loop_context.end_bb st.builder
+    | Syntax.IfStmt (cond_expr, then_stmt, else_opt) ->
+        let then_bb = append_block st "if.then" in
         let else_bb, ifcont_bb =
           match else_opt with
-          | Some _ -> (append_block "if.else", append_block "if.cont")
-          | None -> (fun x -> (x, x)) (append_block "if.cont")
+          | Some _ -> (append_block st "if.else", append_block st "if.end")
+          | None -> (fun x -> (x, x)) (append_block st "if.end")
         in
 
-        let cond_val = gen_to_bool st (gen_expr st cond) in
-        let _ = Llvm.build_cond_br cond_val then_bb else_bb st.builder in
+        let cond = to_i1 st (gen_expr st cond_expr) in
+        let _ = Llvm.build_cond_br cond then_bb else_bb st.builder in
 
         let _ = gen_branch st then_bb ifcont_bb then_stmt in
         let _ = Option.iter (gen_branch st else_bb ifcont_bb) else_opt in
 
         Llvm.position_at_end ifcont_bb st.builder
-    | Syntax.WhileStmt (cond, body_stmt) ->
-        let prev_cond_bb = st.loop_cond_bb in
-        let prev_end_bb = st.loop_end_bb in
+    | Syntax.WhileStmt (cond_expr, body_stmt) ->
+        let prev_cond_bb = st.loop_context.cond_bb in
+        let prev_end_bb = st.loop_context.end_bb in
 
-        let cond_bb = Llvm.append_block st.context "while.cond" st.cur_func in
-        let body_bb = Llvm.append_block st.context "while.body" st.cur_func in
-        let end_bb = Llvm.append_block st.context "while.end" st.cur_func in
+        let cond_bb = append_block st "while.cond" in
+        let body_bb = append_block st "while.body" in
+        let end_bb = append_block st "while.end" in
 
-        st.loop_cond_bb <- cond_bb;
-        st.loop_end_bb <- end_bb;
+        st.loop_context <- { cond_bb; end_bb };
         let _ = Llvm.build_br cond_bb st.builder in
 
         Llvm.position_at_end cond_bb st.builder;
-        let cond_val = gen_to_bool st (gen_expr st cond) in
-        let _ = Llvm.build_cond_br cond_val body_bb end_bb st.builder in
+        let cond = to_i1 st (gen_expr st cond_expr) in
+        let _ = Llvm.build_cond_br cond body_bb end_bb st.builder in
 
         gen_branch st body_bb cond_bb body_stmt;
 
-        st.loop_cond_bb <- prev_cond_bb;
-        st.loop_end_bb <- prev_end_bb;
+        st.loop_context <- { cond_bb = prev_cond_bb; end_bb = prev_end_bb };
         Llvm.position_at_end end_bb st.builder
     | _ -> assert false
 
@@ -163,11 +147,11 @@ and gen_branch st bb cont_bb stmt =
   if block_is_open st then ignore @@ Llvm.build_br cont_bb st.builder
 
 let gen_ast st (Located.At (_, ast)) =
-  let () = List.iter (Fun.compose ignore (gen_stmt st)) ast in
+  List.iter (Fun.compose ignore (gen_stmt st)) ast;
   if block_is_open st then ignore @@ Llvm.build_ret (const_i64 st 0L) st.builder
 
 let rec emit ~ast ~module_name ~output_path =
-  let () = Llvm_all_backends.initialize () in
+  Llvm_all_backends.initialize ();
   let context = Llvm.create_context () in
   let cur_module = Llvm.create_module context module_name in
   let builder = Llvm.builder context in
@@ -176,7 +160,7 @@ let rec emit ~ast ~module_name ~output_path =
   let func_type = Llvm.function_type (Llvm.i64_type context) [||] in
   let func = Llvm.define_function "main" func_type cur_module in
   let bb = Llvm.entry_block func in
-  let () = Llvm.position_at_end bb builder in
+  Llvm.position_at_end bb builder;
 
   let st =
     {
@@ -185,13 +169,12 @@ let rec emit ~ast ~module_name ~output_path =
       cur_func = func;
       builder;
       names;
-      loop_cond_bb = bb;
-      loop_end_bb = bb;
+      loop_context = { cond_bb = bb; end_bb = bb };
     }
   in
 
   let* () = set_target st in
-  let () = gen_ast st ast in
+  gen_ast st ast;
 
   try Ok (Llvm.print_module output_path st.cur_module)
   with Llvm.IoError s -> Error (WriteToFileError s)
