@@ -20,7 +20,7 @@ logic.rhs:                                        ; preds = %entry
   br label %logic.end
 
 logic.end:                                        ; preds = %logic.rhs, %entry
-  %4 = phi i1 [ true, %entry ], [ %3, %logic.rhs ]
+  %4 = phi i1 [ false, %entry ], [ %3, %logic.rhs ]
   %5 = zext i1 %4 to i64
   %6 = icmp ne i64 %5, 0
   br i1 %6, label %logic.end2, label %logic.rhs1
@@ -34,7 +34,7 @@ logic.rhs1:                                       ; preds = %logic.end
   br label %logic.end2
 
 logic.end2:                                       ; preds = %logic.rhs1, %logic.end
-  %12 = phi i1 [ false, %logic.end ], [ %11, %logic.rhs1 ]
+  %12 = phi i1 [ true, %logic.end ], [ %11, %logic.rhs1 ]
   %13 = zext i1 %12 to i64
   store i64 %13, ptr %c, align 8
   %14 = load i64, ptr %c, align 8

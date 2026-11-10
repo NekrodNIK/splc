@@ -28,7 +28,7 @@ logic.rhs:                                        ; preds = %entry
   br label %logic.end
 
 logic.end:                                        ; preds = %logic.rhs, %entry
-  %9 = phi i1 [ true, %entry ], [ %8, %logic.rhs ]
+  %9 = phi i1 [ false, %entry ], [ %8, %logic.rhs ]
   %10 = zext i1 %9 to i64
   %11 = icmp ne i64 %10, 0
   br i1 %11, label %if.then, label %if.cont
