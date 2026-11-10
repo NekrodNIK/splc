@@ -12,40 +12,16 @@ type t = {
 
 type error = GetTargetError of string | WriteToFileError of string
 
-let const_int64 st x = Llvm.(const_of_int64 (i64_type st.context) x false)
+let const_i64 st x = Llvm.(const_of_int64 (i64_type st.context) x false)
+
+let const_i1 st x =
+  Llvm.(const_of_int64 (i1_type st.context) (if x then 1L else 0L) false)
 
 let gen_to_int64 st value =
   Llvm.build_zext value (Llvm.i64_type st.context) "" st.builder
 
 let gen_to_bool st value =
-  Llvm.(build_icmp Icmp.Ne value (const_int64 st 0L) "" st.builder)
-
-let gen_binop st op lhs rhs =
-  let icmp c x y name b =
-    Llvm.build_icmp c x y name st.builder |> gen_to_int64 st
-  in
-  let build =
-    match op with
-    | Syntax.AddOp -> Llvm.build_add
-    | Syntax.SubOp -> Llvm.build_sub
-    | Syntax.MulOp -> Llvm.build_mul
-    | Syntax.DivOp -> Llvm.build_sdiv
-    | Syntax.AndOp ->
-        fun lhs rhs name b ->
-          Llvm.build_and (gen_to_bool st lhs) (gen_to_bool st rhs) name b
-          |> gen_to_int64 st
-    | Syntax.OrOp ->
-        fun lhs rhs name b ->
-          Llvm.build_or (gen_to_bool st lhs) (gen_to_bool st rhs) name b
-          |> gen_to_int64 st
-    | Syntax.LtOp -> icmp Llvm.Icmp.Slt
-    | Syntax.LeOp -> icmp Llvm.Icmp.Sle
-    | Syntax.GtOp -> icmp Llvm.Icmp.Sgt
-    | Syntax.GeOp -> icmp Llvm.Icmp.Sge
-    | Syntax.EqOp -> icmp Llvm.Icmp.Eq
-    | Syntax.NeOp -> icmp Llvm.Icmp.Ne
-  in
-  build lhs rhs "" st.builder
+  Llvm.(build_icmp Icmp.Ne value (const_i64 st 0L) "" st.builder)
 
 let gen_unop st op rhs =
   match op with
@@ -55,15 +31,73 @@ let gen_unop st op rhs =
 
 let rec gen_expr st (Located.At (_, expr)) =
   match expr with
-  | Syntax.IntLitExpr n -> const_int64 st n
-  | Syntax.BoolLitExpr value -> const_int64 st (if value then 1L else 0L)
+  | Syntax.IntLitExpr n -> const_i64 st n
+  | Syntax.BoolLitExpr value -> const_i64 st (if value then 1L else 0L)
   | Syntax.IdentExpr id ->
       let ptr = Hashtbl.find st.names id in
       Llvm.build_load (Llvm.i64_type st.context) ptr "" st.builder
-  | Syntax.BinOpExpr (binop, lhs, rhs) ->
-      gen_binop st binop (gen_expr st lhs) (gen_expr st rhs)
+  | Syntax.BinOpExpr (binop, lhs, rhs) -> gen_binop st binop lhs rhs
   | Syntax.UnaryOpExpr (unop, rhs) -> gen_unop st unop (gen_expr st rhs)
   | _ -> assert false
+
+and gen_binop st op lhs_expr rhs_expr =
+  let icmp c x y name b =
+    Llvm.build_icmp c
+      (x |> gen_expr st)
+      (y |> gen_expr st)
+      name st.builder
+    |> gen_to_int64 st
+  in
+  let eager c x y name b = c (gen_expr st x) (gen_expr st y) name b in
+  let short_circuit c x y name b =
+    let lhs = gen_to_bool st (gen_expr st x) in
+    let append_block () = Llvm.append_block st.context "" st.cur_func in
+    let then_bb = append_block () in
+    let else_bb = append_block () in
+    let cont_bb = append_block () in
+
+    let rhs =
+      match op with
+      | Syntax.AndOp ->
+          let _ = Llvm.build_cond_br lhs then_bb else_bb b in
+          Llvm.position_at_end then_bb st.builder;
+          let rhs1 = gen_to_bool st (gen_expr st y) in
+          ignore (Llvm.build_br cont_bb b);
+          Llvm.position_at_end else_bb st.builder;
+          ignore (Llvm.build_br cont_bb b);
+          [ (rhs1, then_bb); (const_i1 st false, else_bb) ]
+      | Syntax.OrOp ->
+          let _ =
+            Llvm.build_cond_br (Llvm.build_not lhs "" b) then_bb else_bb b
+          in
+          Llvm.position_at_end then_bb st.builder;
+          let rhs1 = gen_to_bool st (gen_expr st y) in
+          ignore (Llvm.build_br cont_bb b);
+          Llvm.position_at_end else_bb st.builder;
+          ignore (Llvm.build_br cont_bb b);
+          [ (rhs1, then_bb); (const_i1 st true, else_bb) ]
+      | _ -> assert false
+    in
+    Llvm.position_at_end cont_bb st.builder;
+    Llvm.build_phi rhs name b |> gen_to_int64 st
+  in
+
+  let build =
+    match op with
+    | Syntax.AddOp -> eager Llvm.build_add
+    | Syntax.SubOp -> eager Llvm.build_sub
+    | Syntax.MulOp -> eager Llvm.build_mul
+    | Syntax.DivOp -> eager Llvm.build_sdiv
+    | Syntax.AndOp -> short_circuit Llvm.build_add
+    | Syntax.OrOp -> short_circuit Llvm.build_or
+    | Syntax.LtOp -> icmp Llvm.Icmp.Slt
+    | Syntax.LeOp -> icmp Llvm.Icmp.Sle
+    | Syntax.GtOp -> icmp Llvm.Icmp.Sgt
+    | Syntax.GeOp -> icmp Llvm.Icmp.Sge
+    | Syntax.EqOp -> icmp Llvm.Icmp.Eq
+    | Syntax.NeOp -> icmp Llvm.Icmp.Ne
+  in
+  build lhs_expr rhs_expr "" st.builder
 
 let block_is_open st =
   st.builder |> Llvm.insertion_block |> Llvm.block_terminator |> Option.is_none
@@ -130,8 +164,7 @@ and gen_branch st bb cont_bb stmt =
 
 let gen_ast st (Located.At (_, ast)) =
   let () = List.iter (Fun.compose ignore (gen_stmt st)) ast in
-  if block_is_open st then
-    ignore @@ Llvm.build_ret (const_int64 st 0L) st.builder
+  if block_is_open st then ignore @@ Llvm.build_ret (const_i64 st 0L) st.builder
 
 let rec emit ~ast ~module_name ~output_path =
   let () = Llvm_all_backends.initialize () in
