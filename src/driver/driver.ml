@@ -10,7 +10,9 @@ let rec splc src_path out_path lr pr emit_llvm =
       run src lex src_path out_path emit_llvm
     else
       let lexer_error =
-        match lr with Some lr_path -> lexer_report lex lr_path | None -> false
+        match lr with
+        | Some lr_path -> lexer_report lex lr_path
+        | None -> false
       and parser_error =
         match pr with
         | Some pr_path -> parser_report lex pr_path
