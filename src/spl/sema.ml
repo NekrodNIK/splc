@@ -35,7 +35,7 @@ let rec check_stmt ?(in_loop = false) (Located.At (loc, stmt)) st =
       check_declarable id loc st |> check_expr rhs |> bind_id id mut
   | Syntax.AssignStmt (At (loc, id), rhs) ->
       check_assignable id loc st |> check_expr rhs
-  | Syntax.ExprStmt _ -> add_error loc ExpressionResultUnused st
+  (* | Syntax.ExprStmt _ -> add_error loc ExpressionResultUnused st *)
   | Syntax.ReturnStmt expr -> check_expr expr st
   | Syntax.IfStmt (cond, then_stmt, Some else_stmt) ->
       st
@@ -70,17 +70,30 @@ let check_always_returns stmt st =
 
 let check_top_decl (Located.At (loc, top_decl)) st =
   match top_decl with
-  | Syntax.FuncTopDecl (At (loc, id), _, stmt) ->
-      check_declarable id loc st
-      |> bind_id id Val
-      |> check_stmt stmt
-      |> check_always_returns stmt
-  | Syntax.ExternTopDecl (At (loc, id), _) -> check_declarable id loc st
+  | Syntax.FuncTopDecl (At (loc, id), _, _)
+  | Syntax.ExternTopDecl (At (loc, id), _) ->
+      check_declarable id loc st |> bind_id id Val
+
+let check_func_body id params body st =
+  List.fold_left
+    (fun st (Located.At (loc, param)) ->
+      check_declarable param loc st |> bind_id param Var)
+    st params
+  |> check_stmt body
+  |> check_always_returns body
 
 let check_main_declared st = check_bounded "main" Located.zero_location st
 
 let check_ast (Located.At (loc, tree)) =
   let st =
-    List.fold_left (Fun.flip check_top_decl) empty tree |> check_main_declared
+    List.fold_left (Fun.flip check_top_decl) empty tree
+    |> check_main_declared
+    |> Fun.flip
+         (List.fold_left (fun st -> function
+           | Located.At (_, Syntax.FuncTopDecl (At (_, id), params, body)) ->
+               let st' = check_func_body id params body st in
+               { st with errors = st'.errors }
+           | _ -> st))
+         tree
   in
   st.errors
