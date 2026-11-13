@@ -40,6 +40,7 @@ and run_codegen ast src_path out_path emit_llvm =
   match Spl.Codegen.emit ~ast ~module_name:src_name ~output_path:llvm_out with
   | Ok () when emit_llvm -> false
   | Ok () -> (
+      (* FIXME *)
       let exit_code =
         Sys.command
         @@ Filename.quote_command "clang" [ "libruntime/spl_runtime.c"; llvm_out; "-o"; out_path ]
