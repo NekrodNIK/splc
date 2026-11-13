@@ -49,7 +49,24 @@ let parse_boollit_expr =
   | False -> Some (Syntax.BoolLitExpr false)
   | _ -> None
 
-let rec parse_primary_expr () =
+let rec parse_call_args () =
+  let* (At (loc, _)) = expect LParen in
+  let* params =
+    sep_by
+      (let* _ = not_followed_by (expect RParen) in
+       parse_expr ())
+      (expect Comma)
+  in
+  let+ _ = expect RParen in
+  Located.At (loc, params)
+
+and parse_call_expr () =
+  let* primary_expr = parse_primary_expr () in
+  (let+ (At (loc, args)) = parse_call_args () in
+   Located.At (loc, Syntax.CallExpr (primary_expr, args)))
+  <|> return primary_expr
+
+and parse_primary_expr () =
   let in_parens =
     let* _ = expect Token.LParen in
     let* expr = parse_expr () in
@@ -63,7 +80,7 @@ and parse_unop_expr () =
   (let* (At (loc, unop)) = parse_unop in
    let+ rhs = parse_unop_expr () in
    Located.At (loc, Syntax.UnaryOpExpr (unop, rhs)))
-  <|> parse_primary_expr ()
+  <|> parse_call_expr ()
 
 and parse_binop_expr prec =
   let rec loop lhs =
@@ -176,7 +193,7 @@ let rec parse_stmt () =
 
 and parse_block_stmt () =
   let* (At (loc, _)) = expect Token.LBrace in
-  let* stmts = parse_t () in
+  let* stmts = many (parse_stmt ()) in
   let+ _ = expect Token.RBrace in
   Located.At (loc, Syntax.BlockStmt stmts)
 
@@ -190,7 +207,6 @@ and parse_cond_stmt () =
      Some stmt)
     <|> return None
   in
-
   Located.At (loc, Syntax.IfStmt (cond, then_stmt, else_stmt))
 
 and parse_while_stmt () =
@@ -199,9 +215,31 @@ and parse_while_stmt () =
   let+ stmt = parse_stmt () in
   Located.At (loc, Syntax.WhileStmt (cond, stmt))
 
-and parse_t () = many (parse_stmt ())
+let parse_params =
+  let* _ = expect LParen in
+  let* params = sep_by parse_ident (expect Comma) in
+  let+ _ = expect RParen in
+  params
+
+let parse_extern_top_decl =
+  let* (At (loc, _)) = expect Token.Extern in
+  let* _ = expect Token.Def in
+  let* fun_ident = parse_ident in
+  let* params = parse_params in
+  let+ _ = expect Semi in
+  Located.At (loc, Syntax.ExternTopDecl (fun_ident, params))
+
+let parse_fun_top_decl =
+  let* (At (loc, _)) = expect Token.Def in
+  let* fun_ident = parse_ident in
+  let* params = parse_params in
+  let+ stmt = parse_block_stmt () in
+  Located.At (loc, Syntax.FuncTopDecl (fun_ident, params, stmt))
+
+let parse_top_decl = parse_extern_top_decl <|> parse_fun_top_decl
+let parse_t = many parse_top_decl
 
 let parse lex =
   let state = make_initial_state lex in
-  let ast, errors = run_parser (parse_t ()) state in
+  let ast, errors = run_parser parse_t state in
   (ast, errors @ Sema.check_ast ast)

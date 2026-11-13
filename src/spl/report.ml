@@ -1,7 +1,8 @@
 let located_to_json inner_to_json (loc : 'a Located.t) =
   let (At (loc, inner)) = loc in
-  Yojson.Basic.Util.combine (inner_to_json inner)
-  @@ `Assoc [ ("line", `Int loc.line); ("column", `Int loc.col) ]
+  Yojson.Basic.Util.combine
+    (`Assoc [ ("line", `Int loc.line); ("column", `Int loc.col) ])
+    (inner_to_json inner)
 
 module TokenReport = struct
   let to_json (token : Token.t) : Yojson.Basic.t =
@@ -38,7 +39,10 @@ module TokenReport = struct
       | Gt -> "GT"
       | Ge -> "GE"
       | Not -> "NOT"
+      | Extern -> "EXTERN"
+      | Def -> "DEF"
       | Error _ -> "ERROR"
+      | Comma -> "COMMA"
       | Eof -> "EOF"
     in
     `Assoc
@@ -74,6 +78,10 @@ module SyntaxReport = struct
     | IntLitExpr n ->
         pack_node "IntLiteral" [] ~comment:(Printf.sprintf "%Lu" n)
     | BoolLitExpr v -> pack_node "BoolLiteral" [] ~comment:(Bool.to_string v)
+    | CallExpr (lexpr, params) ->
+        pack_node "Call"
+          (lexpr_to_json id_to_str lexpr
+          :: List.map (lexpr_to_json id_to_str) params)
     | ErrorExpr err -> lerror_to_json err
 
   and stmt_to_json id_to_str (stmt : 'id Syntax.stmt) =
@@ -109,8 +117,19 @@ module SyntaxReport = struct
   and lexpr_to_json f = located_to_json (expr_to_json f)
   and lstmt_to_json f = located_to_json (stmt_to_json f)
 
+  let top_decl_to_json id_to_str (top_decl : 'id Syntax.topDecl) =
+    match top_decl with
+    | ExternTopDecl (lid, params) ->
+        pack_node "ExternDecl"
+          (List.map (lid_to_json id_to_str) (lid :: params))
+    | FuncTopDecl (lid, params, lstmt) ->
+        pack_node "FuncDecl"
+          (List.map (lid_to_json id_to_str) (lid :: params)
+          @ [ lstmt_to_json id_to_str lstmt ])
+
   let to_json id_to_str (ast : 'id Syntax.t) =
-    pack_node "Program" (List.map (lstmt_to_json id_to_str) ast)
+    pack_node "Program"
+      (List.map (located_to_json (top_decl_to_json id_to_str)) ast)
 end
 
 let report_lexer (lex : Lexer.t) : Yojson.Basic.t * bool =

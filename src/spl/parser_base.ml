@@ -51,6 +51,19 @@ let many par =
   in
   go [] st
 
+let sep_by par sep =
+ fun st ok err ->
+  let rec go ?(need_sep = false) acc st =
+    let At (_, token), _ = Lexer.next_token st.lex in
+    if token = Token.Eof then ok (List.rev acc) st
+    else
+      (if need_sep then let* _ = sep in par else par)
+        st
+        (fun x st' -> go ~need_sep:true (x :: acc) st')
+        (fun _ st' -> ok (List.rev acc) st')
+  in
+  go [] st
+
 let get_last_token = fun st ok err -> ok st.last_token st
 
 let any_token =

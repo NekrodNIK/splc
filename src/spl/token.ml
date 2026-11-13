@@ -30,6 +30,9 @@ type t =
   | Le
   | Gt
   | Ge
+  | Extern
+  | Def
+  | Comma
   | Error of Errors.t
   | Eof
 [@@deriving show]
@@ -66,6 +69,9 @@ let to_string token : string =
   | Le -> "<="
   | Gt -> ">"
   | Ge -> ">="
+  | Extern -> "extern"
+  | Def -> "def"
+  | Comma -> ","
   | Error err -> Errors.to_string err
   | Eof -> ""
 
@@ -83,4 +89,7 @@ let length token =
   | LParen | RParen | LBrace | RBrace | Semi -> 1
   | Assign | Plus | Minus | Star | Slash | Lt | Gt | Not -> 1
   | And | Or | Eq | Ne | Le | Ge -> 2
+  | Extern -> 6
+  | Def -> 3
+  | Comma -> 1
   | Error _ | Eof -> 0
