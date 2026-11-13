@@ -1,5 +1,5 @@
-; ModuleID = 'spl'
-source_filename = "spl"
+; ModuleID = 'test.spl'
+source_filename = "test.spl"
 target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-unknown-linux-gnu"
 
@@ -11,31 +11,31 @@ entry:
   store i64 0, ptr %y, align 8
   %z = alloca i64, align 8
   store i64 0, ptr %z, align 8
-  %x1 = load i64, ptr %x, align 8
-  %ifcond = icmp ne i64 %x1, 0
-  br i1 %ifcond, label %then, label %else
+  %0 = load i64, ptr %x, align 8
+  %1 = icmp ne i64 %0, 0
+  br i1 %1, label %if.then, label %if.else
 
-then:                                             ; preds = %entry
-  %y2 = load i64, ptr %y, align 8
-  %ifcond3 = icmp ne i64 %y2, 0
-  br i1 %ifcond3, label %then4, label %else6
+if.then:                                          ; preds = %entry
+  %2 = load i64, ptr %y, align 8
+  %3 = icmp ne i64 %2, 0
+  br i1 %3, label %if.then1, label %if.else3
 
-ifmerge:                                          ; preds = %else, %ifmerge5
-  %z7 = load i64, ptr %z, align 8
-  ret i64 %z7
+if.cont:                                          ; preds = %if.else, %if.cont2
+  %4 = load i64, ptr %z, align 8
+  ret i64 %4
 
-else:                                             ; preds = %entry
+if.else:                                          ; preds = %entry
   store i64 3, ptr %z, align 8
-  br label %ifmerge
+  br label %if.cont
 
-then4:                                            ; preds = %then
+if.then1:                                         ; preds = %if.then
   store i64 1, ptr %z, align 8
-  br label %ifmerge5
+  br label %if.cont2
 
-ifmerge5:                                         ; preds = %else6, %then4
-  br label %ifmerge
+if.cont2:                                         ; preds = %if.else3, %if.then1
+  br label %if.cont
 
-else6:                                            ; preds = %then
+if.else3:                                         ; preds = %if.then
   store i64 2, ptr %z, align 8
-  br label %ifmerge5
+  br label %if.cont2
 }

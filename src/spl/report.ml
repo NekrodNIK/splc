@@ -9,18 +9,36 @@ module TokenReport = struct
       match token with
       | Ident _ -> "IDENT"
       | Number _ -> "INT"
+      | True -> "TRUE"
+      | False -> "FALSE"
       | Val -> "VAL"
       | Var -> "VAR"
-      | Assign -> "ASSIGN"
       | Return -> "RETURN"
-      | Plus -> "PLUS"
-      | Minus -> "MINUS"
-      | Slash -> "DIV"
-      | Asterisk -> "MULT"
-      | SemiColon -> "SEMI"
+      | If -> "IF"
+      | Else -> "ELSE"
+      | While -> "WHILE"
+      | Break -> "BREAK"
+      | Continue -> "CONTINUE"
       | LParen -> "LPAREN"
       | RParen -> "RPAREN"
-      | Error err -> "ERROR"
+      | LBrace -> "LBRACE"
+      | RBrace -> "RBRACE"
+      | Semi -> "SEMI"
+      | Assign -> "ASSIGN"
+      | Plus -> "PLUS"
+      | Minus -> "MINUS"
+      | Star -> "MULT"
+      | Slash -> "DIV"
+      | And -> "AND"
+      | Or -> "OR"
+      | Eq -> "EQ"
+      | Ne -> "NE"
+      | Lt -> "LT"
+      | Le -> "LE"
+      | Gt -> "GT"
+      | Ge -> "GE"
+      | Not -> "NOT"
+      | Error _ -> "ERROR"
       | Eof -> "EOF"
     in
     `Assoc
@@ -55,6 +73,7 @@ module SyntaxReport = struct
     | IdentExpr id -> pack_node "Ident" [] ~comment:(id_to_str id)
     | IntLitExpr n ->
         pack_node "IntLiteral" [] ~comment:(Printf.sprintf "%Lu" n)
+    | BoolLitExpr v -> pack_node "BoolLiteral" [] ~comment:(Bool.to_string v)
     | ErrorExpr err -> lerror_to_json err
 
   and stmt_to_json id_to_str (stmt : 'id Syntax.stmt) =
@@ -68,6 +87,23 @@ module SyntaxReport = struct
     | AssignStmt (lid, lexpr) ->
         pack_node "Assign"
           [ lid_to_json id_to_str lid; lexpr_to_json id_to_str lexpr ]
+    | IfStmt (lexpr, then_, Some else_) ->
+        pack_node "If"
+          [
+            lexpr_to_json id_to_str lexpr;
+            lstmt_to_json id_to_str then_;
+            lstmt_to_json id_to_str else_;
+          ]
+    | IfStmt (lexpr, then_, None) ->
+        pack_node "If"
+          [ lexpr_to_json id_to_str lexpr; lstmt_to_json id_to_str then_ ]
+    | WhileStmt (lexpr, lstmt) ->
+        pack_node "While"
+          [ lexpr_to_json id_to_str lexpr; lstmt_to_json id_to_str lstmt ]
+    | BreakStmt -> pack_node "Break" []
+    | ContinueStmt -> pack_node "Continue" []
+    | BlockStmt list_ ->
+        pack_node "Block" @@ List.map (lstmt_to_json id_to_str) list_
     | ErrorStmt err -> lerror_to_json err
 
   and lexpr_to_json f = located_to_json (expr_to_json f)

@@ -1,5 +1,5 @@
-; ModuleID = 'spl'
-source_filename = "spl"
+; ModuleID = 'test.spl'
+source_filename = "test.spl"
 target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-unknown-linux-gnu"
 
@@ -10,32 +10,33 @@ entry:
   %b = alloca i64, align 8
   store i64 0, ptr %b, align 8
   %c = alloca i64, align 8
-  %a1 = load i64, ptr %a, align 8
-  %lbool = icmp ne i64 %a1, 0
-  br i1 %lbool, label %logic.rhs, label %logic.end
+  %0 = load i64, ptr %a, align 8
+  %1 = icmp ne i64 %0, 0
+  br i1 %1, label %logic.rhs, label %logic.end
 
 logic.rhs:                                        ; preds = %entry
-  %b2 = load i64, ptr %b, align 8
-  %rbool = icmp ne i64 %b2, 0
+  %2 = load i64, ptr %b, align 8
+  %3 = icmp ne i64 %2, 0
   br label %logic.end
 
 logic.end:                                        ; preds = %logic.rhs, %entry
-  %logictmp = phi i1 [ false, %entry ], [ %rbool, %logic.rhs ]
-  %logicext = zext i1 %logictmp to i64
-  %lbool3 = icmp ne i64 %logicext, 0
-  br i1 %lbool3, label %logic.end5, label %logic.rhs4
+  %4 = phi i1 [ false, %entry ], [ %3, %logic.rhs ]
+  %5 = zext i1 %4 to i64
+  %6 = icmp ne i64 %5, 0
+  br i1 %6, label %logic.end2, label %logic.rhs1
 
-logic.rhs4:                                       ; preds = %logic.end
-  %a6 = load i64, ptr %a, align 8
-  %nottmp = icmp eq i64 %a6, 0
-  %notext = zext i1 %nottmp to i64
-  %rbool7 = icmp ne i64 %notext, 0
-  br label %logic.end5
+logic.rhs1:                                       ; preds = %logic.end
+  %7 = load i64, ptr %a, align 8
+  %8 = icmp ne i64 %7, 0
+  %9 = xor i1 %8, true
+  %10 = zext i1 %9 to i64
+  %11 = icmp ne i64 %10, 0
+  br label %logic.end2
 
-logic.end5:                                       ; preds = %logic.rhs4, %logic.end
-  %logictmp8 = phi i1 [ true, %logic.end ], [ %rbool7, %logic.rhs4 ]
-  %logicext9 = zext i1 %logictmp8 to i64
-  store i64 %logicext9, ptr %c, align 8
-  %c10 = load i64, ptr %c, align 8
-  ret i64 %c10
+logic.end2:                                       ; preds = %logic.rhs1, %logic.end
+  %12 = phi i1 [ true, %logic.end ], [ %11, %logic.rhs1 ]
+  %13 = zext i1 %12 to i64
+  store i64 %13, ptr %c, align 8
+  %14 = load i64, ptr %c, align 8
+  ret i64 %14
 }

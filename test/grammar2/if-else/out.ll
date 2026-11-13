@@ -1,5 +1,5 @@
-; ModuleID = 'spl'
-source_filename = "spl"
+; ModuleID = 'test.spl'
+source_filename = "test.spl"
 target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-unknown-linux-gnu"
 
@@ -9,21 +9,21 @@ entry:
   store i64 1, ptr %x, align 8
   %y = alloca i64, align 8
   store i64 0, ptr %y, align 8
-  %x1 = load i64, ptr %x, align 8
-  %cmptmp = icmp eq i64 %x1, 1
-  %zexttmp = zext i1 %cmptmp to i64
-  %ifcond = icmp ne i64 %zexttmp, 0
-  br i1 %ifcond, label %then, label %else
+  %0 = load i64, ptr %x, align 8
+  %1 = icmp eq i64 %0, 1
+  %2 = zext i1 %1 to i64
+  %3 = icmp ne i64 %2, 0
+  br i1 %3, label %if.then, label %if.else
 
-then:                                             ; preds = %entry
+if.then:                                          ; preds = %entry
   store i64 2, ptr %y, align 8
-  br label %ifmerge
+  br label %if.cont
 
-ifmerge:                                          ; preds = %else, %then
-  %y2 = load i64, ptr %y, align 8
-  ret i64 %y2
+if.cont:                                          ; preds = %if.else, %if.then
+  %4 = load i64, ptr %y, align 8
+  ret i64 %4
 
-else:                                             ; preds = %entry
+if.else:                                          ; preds = %entry
   store i64 3, ptr %y, align 8
-  br label %ifmerge
+  br label %if.cont
 }
