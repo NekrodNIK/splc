@@ -1,14 +1,15 @@
 open Result.Syntax
 
-type loop_context = { cond_bb : Llvm.llbasicblock; end_bb : Llvm.llbasicblock }
+type loop_ctx = { cond_bb : Llvm.llbasicblock; end_bb : Llvm.llbasicblock }
 
 type t = {
   context : Llvm.llcontext;
   builder : Llvm.llbuilder;
   cur_module : Llvm.llmodule;
   mutable cur_func : Llvm.llvalue;
-  mutable loop_context : loop_context;
+  mutable loop_ctx : loop_ctx;
   names : (string, Llvm.llvalue) Hashtbl.t;
+  funcs : (string, Llvm.llvalue * Llvm.lltype) Hashtbl.t;
 }
 
 type error = GetTargetError of string | WriteToFileError of string
@@ -37,6 +38,15 @@ let rec gen_expr st (Located.At (_, expr)) =
       Llvm.build_load (Llvm.i64_type st.context) ptr "" st.builder
   | Syntax.BinOpExpr (binop, lhs, rhs) -> gen_binop st binop lhs rhs
   | Syntax.UnaryOpExpr (unop, rhs) -> gen_unop st unop (gen_expr st rhs)
+  | Syntax.CallExpr (At (_, expr), args) ->
+      let func, func_type =
+        match expr with
+        | Syntax.IdentExpr id -> Hashtbl.find st.funcs id
+        | _ -> failwith "unsupported callee"
+      in
+      Llvm.build_call func_type func
+        (Array.of_list (List.map (gen_expr st) args))
+        "" st.builder
   | _ -> failwith "unsupported expr"
 
 and gen_binop st op lhs_expr rhs_expr =
@@ -102,14 +112,16 @@ let rec gen_stmt st (Located.At (_, stmt)) =
     | Syntax.ReturnStmt expr ->
         ignore @@ Llvm.build_ret (gen_expr st expr) st.builder
     | Syntax.ContinueStmt ->
-        ignore @@ Llvm.build_br st.loop_context.cond_bb st.builder
-    | Syntax.BreakStmt ->
-        ignore @@ Llvm.build_br st.loop_context.end_bb st.builder
+        ignore @@ Llvm.build_br st.loop_ctx.cond_bb st.builder
+    | Syntax.BreakStmt -> ignore @@ Llvm.build_br st.loop_ctx.end_bb st.builder
     | Syntax.IfStmt (cond_expr, then_stmt, else_opt) ->
         let then_bb = append_block st "if.then" in
         let else_bb, ifcont_bb =
           match else_opt with
-          | Some _ -> (append_block st "if.else", append_block st "if.cont")
+          | Some _ ->
+              let else_bb = append_block st "if.else" in
+              let ifcont_bb = append_block st "if.cont" in
+              (else_bb, ifcont_bb)
           | None -> (fun x -> (x, x)) (append_block st "if.cont")
         in
 
@@ -121,14 +133,14 @@ let rec gen_stmt st (Located.At (_, stmt)) =
 
         Llvm.position_at_end ifcont_bb st.builder
     | Syntax.WhileStmt (cond_expr, body_stmt) ->
-        let prev_cond_bb = st.loop_context.cond_bb in
-        let prev_end_bb = st.loop_context.end_bb in
+        let prev_cond_bb = st.loop_ctx.cond_bb in
+        let prev_end_bb = st.loop_ctx.end_bb in
 
         let cond_bb = append_block st "while.cond" in
         let body_bb = append_block st "while.body" in
         let end_bb = append_block st "while.end" in
 
-        st.loop_context <- { cond_bb; end_bb };
+        st.loop_ctx <- { cond_bb; end_bb };
         let _ = Llvm.build_br cond_bb st.builder in
 
         Llvm.position_at_end cond_bb st.builder;
@@ -137,8 +149,11 @@ let rec gen_stmt st (Located.At (_, stmt)) =
 
         gen_branch st body_bb cond_bb body_stmt;
 
-        st.loop_context <- { cond_bb = prev_cond_bb; end_bb = prev_end_bb };
+        st.loop_ctx <- { cond_bb = prev_cond_bb; end_bb = prev_end_bb };
         Llvm.position_at_end end_bb st.builder
+    | Syntax.ExprStmt expr ->
+        let _ = gen_expr st expr in
+        ()
     | _ -> assert false
 
 and gen_branch st bb cont_bb stmt =
@@ -146,9 +161,49 @@ and gen_branch st bb cont_bb stmt =
   gen_stmt st stmt;
   if block_is_open st then ignore @@ Llvm.build_br cont_bb st.builder
 
-let gen_ast st (Located.At (_, ast)) =
-  List.iter (Fun.compose ignore (gen_stmt st)) ast;
+let gen_top_decl st (Located.At (_, top_decl)) =
+  let func_type =
+    match top_decl with
+    | Syntax.FuncTopDecl (At (_, id), params, _)
+    | Syntax.ExternTopDecl (At (_, id), params) ->
+        Llvm.function_type (Llvm.i64_type st.context)
+        @@ Array.of_list (List.map (fun _ -> Llvm.i64_type st.context) params)
+  in
+  let id, func =
+    match top_decl with
+    | FuncTopDecl (At (_, id), _, _) ->
+        (id, Llvm.define_function id func_type st.cur_module)
+    | ExternTopDecl (At (_, id), _) ->
+        (id, Llvm.declare_function id func_type st.cur_module)
+  in
+  Hashtbl.add st.funcs id (func, func_type)
+
+let gen_func_body st id params body =
+  let func, func_type = Hashtbl.find st.funcs id in
+  st.cur_func <- func;
+  let bb = Llvm.entry_block func in
+  Llvm.position_at_end bb st.builder;
+  List.iteri
+    (fun ind (Located.At (_, param)) ->
+      Hashtbl.add st.names param
+      @@
+      let param_value = Llvm.param func ind in
+      let ptr = Llvm.build_alloca (Llvm.i64_type st.context) param st.builder in
+      let _ = Llvm.build_store param_value ptr st.builder in
+      let () = Hashtbl.add st.names param ptr in
+      ptr)
+    params;
+  gen_stmt st body;
   if block_is_open st then ignore @@ Llvm.build_ret (const_i64 st 0L) st.builder
+
+let gen_ast st (Located.At (_, ast)) =
+  List.iter (gen_top_decl st) ast;
+  List.iter
+    (function
+      | Located.At (_, Syntax.FuncTopDecl (At (_, id), params, body)) ->
+          gen_func_body st id params body
+      | _ -> ())
+    ast
 
 let rec emit ~ast ~module_name ~output_path =
   Llvm_all_backends.initialize ();
@@ -156,25 +211,31 @@ let rec emit ~ast ~module_name ~output_path =
   let cur_module = Llvm.create_module context module_name in
   let builder = Llvm.builder context in
   let names = Hashtbl.create 16 in
+  let funcs = Hashtbl.create 16 in
 
-  let func_type = Llvm.function_type (Llvm.i64_type context) [||] in
-  let func = Llvm.define_function "main" func_type cur_module in
-  let bb = Llvm.entry_block func in
-  Llvm.position_at_end bb builder;
+  let cur_func =
+    Llvm.declare_function ""
+      (Llvm.function_type (Llvm.void_type context) [||])
+      cur_module
+  in
+  let bb = Llvm.entry_block cur_func in
 
   let st =
     {
       context;
       cur_module;
-      cur_func = func;
+      cur_func;
       builder;
       names;
-      loop_context = { cond_bb = bb; end_bb = bb };
+      funcs;
+      loop_ctx = { cond_bb = bb; end_bb = bb };
     }
   in
 
   let* () = set_target st in
-  gen_ast st ast;
+  let () = gen_ast st ast in
+
+  Llvm.delete_function cur_func;
 
   try Ok (Llvm.print_module output_path st.cur_module)
   with Llvm.IoError s -> Error (WriteToFileError s)
