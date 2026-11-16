@@ -33,10 +33,17 @@ let rec check_expr (Located.At (loc, expr)) st =
       add_error loc (UndeclaredIdentifier id) st
   | BinOpExpr (_, lhs, rhs) -> check_expr lhs st |> check_expr rhs
   | UnaryOpExpr (_, rhs) -> check_expr rhs st
+  | CallExpr (callee, params) ->
+      (match Located.get callee with
+        | Syntax.IdentExpr _ -> st
+        | expr -> add_error (Located.get_loc callee) UnsupportedCallee st)
+      |> check_expr callee
+      |> check_list_fold check_expr params
   | _ -> st
 
 let rec check_stmt ?(in_loop = false) (Located.At (loc, stmt)) st =
   match stmt with
+  | Syntax.ExprStmt expr -> check_expr expr st
   | Syntax.DeclStmt (mut, At (_, id), rhs) ->
       check_declarable id loc st |> check_expr rhs |> bind_id id mut
   | Syntax.AssignStmt (At (loc, id), rhs) ->
