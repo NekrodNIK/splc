@@ -188,7 +188,7 @@ let gen_func_body st id params body =
       Hashtbl.add st.names param
       @@
       let param_value = Llvm.param func ind in
-      let ptr = Llvm.(build_alloca (i64_type st.context) "" st.builder) in
+      let ptr = Llvm.build_alloca (Llvm.i64_type st.context) param st.builder in
       let _ = Llvm.build_store param_value ptr st.builder in
       let () = Hashtbl.add st.names param ptr in
       ptr)
