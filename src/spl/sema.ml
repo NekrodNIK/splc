@@ -7,6 +7,12 @@ let empty = { env = StringMap.empty; errors = [] }
 let add_error loc err st = { st with errors = At (loc, err) :: st.errors }
 let bind_id id mut st = { st with env = StringMap.add id mut st.env }
 
+let with_scope f st =
+  let st' = f st in
+  { st with errors = st'.errors }
+
+let check_list_fold f list_ st = List.fold_left (fun acc x -> f x acc) st list_
+
 let check_declarable id loc st =
   if StringMap.mem id st.env then add_error loc (Redeclaration id) st else st
 
@@ -35,7 +41,6 @@ let rec check_stmt ?(in_loop = false) (Located.At (loc, stmt)) st =
       check_declarable id loc st |> check_expr rhs |> bind_id id mut
   | Syntax.AssignStmt (At (loc, id), rhs) ->
       check_assignable id loc st |> check_expr rhs
-  (* | Syntax.ExprStmt _ -> add_error loc ExpressionResultUnused st *)
   | Syntax.ReturnStmt expr -> check_expr expr st
   | Syntax.IfStmt (cond, then_stmt, Some else_stmt) ->
       st
@@ -51,8 +56,7 @@ let rec check_stmt ?(in_loop = false) (Located.At (loc, stmt)) st =
   | Syntax.BreakStmt ->
       if not in_loop then add_error loc BreakOutsideLoop st else st
   | Syntax.BlockStmt stmts ->
-      let st' = List.fold_left (Fun.flip (check_stmt ~in_loop)) st stmts in
-      { st with errors = st'.errors }
+      with_scope (check_list_fold (check_stmt ~in_loop) stmts) st
   | _ -> st
 
 let rec always_returns (Located.At (loc, stmt)) =
@@ -75,10 +79,10 @@ let check_top_decl (Located.At (loc, top_decl)) st =
       check_declarable id loc st |> bind_id id Val
 
 let check_func_body id params body st =
-  List.fold_left
-    (fun st (Located.At (loc, param)) ->
-      check_declarable param loc st |> bind_id param Var)
-    st params
+  check_list_fold
+       (fun (Located.At (loc, param)) st ->
+         check_declarable param loc st |> bind_id param Var)
+       params st
   |> check_stmt body
   |> check_always_returns body
 
@@ -88,12 +92,11 @@ let check_ast (Located.At (loc, tree)) =
   let st =
     List.fold_left (Fun.flip check_top_decl) empty tree
     |> check_main_declared
-    |> Fun.flip
-         (List.fold_left (fun st -> function
+    |> check_list_fold
+         (function
            | Located.At (_, Syntax.FuncTopDecl (At (_, id), params, body)) ->
-               let st' = check_func_body id params body st in
-               { st with errors = st'.errors }
-           | _ -> st))
+               with_scope (check_func_body id params body)
+           | _ -> Fun.id)
          tree
   in
   st.errors

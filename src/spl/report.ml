@@ -117,7 +117,7 @@ module SyntaxReport = struct
   and lexpr_to_json f = located_to_json (expr_to_json f)
   and lstmt_to_json f = located_to_json (stmt_to_json f)
 
-  let top_decl_to_json id_to_str (top_decl : 'id Syntax.topDecl) =
+  let top_decl_to_json id_to_str (top_decl : 'id Syntax.top_decl) =
     match top_decl with
     | ExternTopDecl (lid, params) ->
         pack_node "ExternDecl"

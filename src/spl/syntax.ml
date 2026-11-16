@@ -16,7 +16,7 @@ type binop =
 type unop = NegOp | NotOp [@@deriving show]
 type mut = Val | Var [@@deriving show]
 
-type 'id topDecl =
+type 'id top_decl =
   | ExternTopDecl of 'id lid * 'id lid list
   | FuncTopDecl of 'id lid * 'id lid list * 'id lstmt
 [@@deriving show]
@@ -44,13 +44,13 @@ and 'id expr =
   | ErrorExpr of lerror
 [@@deriving show]
 
-and 'id ltopDecl = 'id topDecl Located.t [@@deriving show]
+and 'id ltop_decl = 'id top_decl Located.t [@@deriving show]
 and 'id lstmt = 'id stmt Located.t [@@deriving show]
 and 'id lexpr = 'id expr Located.t [@@deriving show]
 and lerror = Errors.t Located.t [@@deriving show]
 and 'id lid = 'id Located.t [@@deriving show]
 
-type 'id t = 'id ltopDecl list [@@deriving show]
+type 'id t = 'id ltop_decl list [@@deriving show]
 
 let binop_precedence = function
   | AndOp | OrOp -> 1
