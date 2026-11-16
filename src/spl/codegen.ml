@@ -42,7 +42,7 @@ let rec gen_expr st (Located.At (_, expr)) =
       let func, func_type =
         match expr with
         | Syntax.IdentExpr id -> Hashtbl.find st.funcs id
-        | _ -> failwith "todo"
+        | _ -> failwith "unsupported callee"
       in
       Llvm.build_call func_type func
         (Array.of_list (List.map (gen_expr st) args))
