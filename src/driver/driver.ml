@@ -40,10 +40,18 @@ and run_codegen ast src_path out_path emit_llvm =
   match Spl.Codegen.emit ~ast ~module_name:src_name ~output_path:llvm_out with
   | Ok () when emit_llvm -> false
   | Ok () -> (
-      (* FIXME *)
+      let runtime_dir = Filename.temp_dir "spl_runtime" "" in
+      let h_path = Filename.concat runtime_dir "spl_runtime.h" in
+      let c_path = Filename.concat runtime_dir "spl_runtime.c" in
+
+      Out_channel.with_open_bin h_path (fun oc ->
+          Out_channel.output_string oc Spl_runtime.hdr);
+      Out_channel.with_open_bin c_path (fun oc ->
+          Out_channel.output_string oc Spl_runtime.src);
+
       let exit_code =
         Sys.command
-        @@ Filename.quote_command "clang" [ "libruntime/spl_runtime.c"; llvm_out; "-o"; out_path ]
+        @@ Filename.quote_command "clang" [ c_path; llvm_out; "-o"; out_path ]
       in
       match exit_code with
       | 0 -> false
