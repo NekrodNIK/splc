@@ -1,14 +1,13 @@
-(* FIXME: refactor *)
 open Result.Syntax
 
-type loop_context = { cond_bb : Llvm.llbasicblock; end_bb : Llvm.llbasicblock }
+type loop_ctx = { cond_bb : Llvm.llbasicblock; end_bb : Llvm.llbasicblock }
 
 type t = {
   context : Llvm.llcontext;
   builder : Llvm.llbuilder;
   cur_module : Llvm.llmodule;
   mutable cur_func : Llvm.llvalue;
-  mutable loop_context : loop_context;
+  mutable loop_ctx : loop_ctx;
   names : (string, Llvm.llvalue) Hashtbl.t;
   funcs : (string, Llvm.llvalue * Llvm.lltype) Hashtbl.t;
 }
@@ -113,9 +112,8 @@ let rec gen_stmt st (Located.At (_, stmt)) =
     | Syntax.ReturnStmt expr ->
         ignore @@ Llvm.build_ret (gen_expr st expr) st.builder
     | Syntax.ContinueStmt ->
-        ignore @@ Llvm.build_br st.loop_context.cond_bb st.builder
-    | Syntax.BreakStmt ->
-        ignore @@ Llvm.build_br st.loop_context.end_bb st.builder
+        ignore @@ Llvm.build_br st.loop_ctx.cond_bb st.builder
+    | Syntax.BreakStmt -> ignore @@ Llvm.build_br st.loop_ctx.end_bb st.builder
     | Syntax.IfStmt (cond_expr, then_stmt, else_opt) ->
         let then_bb = append_block st "if.then" in
         let else_bb, ifcont_bb =
@@ -135,14 +133,14 @@ let rec gen_stmt st (Located.At (_, stmt)) =
 
         Llvm.position_at_end ifcont_bb st.builder
     | Syntax.WhileStmt (cond_expr, body_stmt) ->
-        let prev_cond_bb = st.loop_context.cond_bb in
-        let prev_end_bb = st.loop_context.end_bb in
+        let prev_cond_bb = st.loop_ctx.cond_bb in
+        let prev_end_bb = st.loop_ctx.end_bb in
 
         let cond_bb = append_block st "while.cond" in
         let body_bb = append_block st "while.body" in
         let end_bb = append_block st "while.end" in
 
-        st.loop_context <- { cond_bb; end_bb };
+        st.loop_ctx <- { cond_bb; end_bb };
         let _ = Llvm.build_br cond_bb st.builder in
 
         Llvm.position_at_end cond_bb st.builder;
@@ -151,7 +149,7 @@ let rec gen_stmt st (Located.At (_, stmt)) =
 
         gen_branch st body_bb cond_bb body_stmt;
 
-        st.loop_context <- { cond_bb = prev_cond_bb; end_bb = prev_end_bb };
+        st.loop_ctx <- { cond_bb = prev_cond_bb; end_bb = prev_end_bb };
         Llvm.position_at_end end_bb st.builder
     | Syntax.ExprStmt expr ->
         let _ = gen_expr st expr in
@@ -169,7 +167,7 @@ let gen_top_decl st (Located.At (_, top_decl)) =
     | Syntax.FuncTopDecl (At (_, id), params, _)
     | Syntax.ExternTopDecl (At (_, id), params) ->
         Llvm.function_type (Llvm.i64_type st.context)
-          (Array.of_list @@ List.map (fun _ -> Llvm.i64_type st.context) params)
+        @@ Array.of_list (List.map (fun _ -> Llvm.i64_type st.context) params)
   in
   let id, func =
     match top_decl with
@@ -188,11 +186,12 @@ let gen_func_body st id params body =
   List.iteri
     (fun ind (Located.At (_, param)) ->
       Hashtbl.add st.names param
-        (let v = Llvm.param func ind in
-         let ptr = Llvm.(build_alloca (i64_type st.context) "" st.builder) in
-         let () = Hashtbl.add st.names param ptr in
-         let _ = Llvm.build_store v ptr st.builder in
-         ptr))
+      @@
+      let param_value = Llvm.param func ind in
+      let ptr = Llvm.(build_alloca (i64_type st.context) "" st.builder) in
+      let _ = Llvm.build_store param_value ptr st.builder in
+      let () = Hashtbl.add st.names param ptr in
+      ptr)
     params;
   gen_stmt st body;
   if block_is_open st then ignore @@ Llvm.build_ret (const_i64 st 0L) st.builder
@@ -229,7 +228,7 @@ let rec emit ~ast ~module_name ~output_path =
       builder;
       names;
       funcs;
-      loop_context = { cond_bb = bb; end_bb = bb };
+      loop_ctx = { cond_bb = bb; end_bb = bb };
     }
   in
 

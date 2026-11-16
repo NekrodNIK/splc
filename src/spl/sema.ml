@@ -1,4 +1,3 @@
-(* FIXME: refactor *)
 module StringMap = Map.Make (String)
 
 type t = { env : Syntax.mut StringMap.t; errors : Errors.t Located.t list }
@@ -6,15 +5,12 @@ type t = { env : Syntax.mut StringMap.t; errors : Errors.t Located.t list }
 let empty = { env = StringMap.empty; errors = [] }
 let add_error loc err st = { st with errors = At (loc, err) :: st.errors }
 let bind_id id mut st = { st with env = StringMap.add id mut st.env }
+let unbind_id id st = { st with env = StringMap.remove id st.env }
 
-let with_scope f st =
-  let st' = f st in
-  { st with errors = st'.errors }
-
-let check_list_fold f list_ st = List.fold_left (fun acc x -> f x acc) st list_
-
-let check_declarable id loc st =
-  if StringMap.mem id st.env then add_error loc (Redeclaration id) st else st
+let check_bounded id loc st =
+  match StringMap.find_opt id st.env with
+  | Some _ -> st
+  | None -> add_error loc (UndeclaredIdentifier id) st
 
 let check_assignable id loc st =
   match StringMap.find_opt id st.env with
@@ -22,10 +18,14 @@ let check_assignable id loc st =
   | Some Syntax.Val -> add_error loc (AssignToImmutable id) st
   | Some _ -> st
 
-let check_bounded id loc st =
-  match StringMap.find_opt id st.env with
-  | Some _ -> st
-  | None -> add_error loc (UndeclaredIdentifier id) st
+let check_declarable id loc st =
+  if StringMap.mem id st.env then add_error loc (Redeclaration id) st else st
+
+let with_scope f st =
+  let st' = f st in
+  { st with errors = st'.errors }
+
+let check_list_fold f list_ st = List.fold_left (fun acc x -> f x acc) st list_
 
 let rec check_expr (Located.At (loc, expr)) st =
   match expr with
@@ -80,9 +80,9 @@ let check_top_decl (Located.At (loc, top_decl)) st =
 
 let check_func_body id params body st =
   check_list_fold
-       (fun (Located.At (loc, param)) st ->
-         check_declarable param loc st |> bind_id param Var)
-       params st
+    (fun (Located.At (loc, param)) st ->
+      st |> check_declarable param loc |> bind_id param Var)
+    params st
   |> check_stmt body
   |> check_always_returns body
 
