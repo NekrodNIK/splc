@@ -51,7 +51,7 @@ and run_codegen ast src_path out_path emit_llvm =
 
       let exit_code =
         Sys.command
-        @@ Filename.quote_command "clang" [ c_path; llvm_out; "-o"; out_path ]
+        @@ Filename.quote_command "clang" [ h_path; c_path; llvm_out; "-o"; out_path ]
       in
       match exit_code with
       | 0 -> false
