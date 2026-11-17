@@ -9,7 +9,8 @@ module TokenReport = struct
     let kind =
       match token with
       | Ident _ -> "IDENT"
-      | Number _ -> "INT"
+      | NumberLiteral _ -> "INT"
+      | StringLiteral _ -> "STR"
       | True -> "TRUE"
       | False -> "FALSE"
       | Val -> "VAL"
@@ -25,6 +26,8 @@ module TokenReport = struct
       | LBrace -> "LBRACE"
       | RBrace -> "RBRACE"
       | Semi -> "SEMI"
+      | Colon -> "COLON"
+      | Comma -> "COMMA"
       | Assign -> "ASSIGN"
       | Plus -> "PLUS"
       | Minus -> "MINUS"
@@ -41,8 +44,17 @@ module TokenReport = struct
       | Not -> "NOT"
       | Extern -> "EXTERN"
       | Def -> "DEF"
+      | Cast -> "CAST"
+      (**)
+      | Int8 -> "INT8"
+      | Int16 -> "INT16"
+      | Int32 -> "INT32"
+      | Int64 -> "INT64"
+      | Bool -> "BOOL"
+      | Void -> "VOID"
+      | String -> "STRING"
+      (**)
       | Error _ -> "ERROR"
-      | Comma -> "COMMA"
       | Eof -> "EOF"
     in
     `Assoc

@@ -37,7 +37,7 @@ let parse_ident_expr =
 
 let parse_intlit_expr =
   satisfy_map "integer literal" @@ function
-  | Number s ->
+  | NumberLiteral s ->
       Option.map
         (fun n -> Syntax.IntLitExpr n)
         (Scanf.sscanf_opt s "%Lu" Fun.id)

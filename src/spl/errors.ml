@@ -1,5 +1,7 @@
 type t =
   | UnterminatedMultilineComment
+  | UnterminatedStringLiteral
+  | UnknownEscapeSequence
   | UnknownToken of char
   | MissingSemi
   | Expected of { expected : string; actual : string }
@@ -15,6 +17,8 @@ type t =
 
 let to_string = function
   | UnterminatedMultilineComment -> "unterminated multi-line comment"
+  | UnterminatedStringLiteral -> "unterminated string literal"
+  | UnknownEscapeSequence -> "unknown escape sequence"
   | UnknownToken ch -> [%string "unknown token '%{String.of_char ch}'"]
   | MissingSemi -> "missing semicolon"
   | Expected { expected; actual } ->
@@ -30,7 +34,8 @@ let to_string = function
   | BreakOutsideLoop -> [%string "break outside loop"]
 
 let underline_length = function
-  | UnterminatedMultilineComment | UnknownToken _ | MissingSemi
+  | UnterminatedMultilineComment | UnterminatedStringLiteral
+  | UnknownEscapeSequence | UnknownToken _ | MissingSemi
   | ExpressionResultUnused ->
       1
   | Expected { actual = s }
