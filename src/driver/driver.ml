@@ -87,7 +87,7 @@ let cmd =
   and+ lr = Arg.(value & opt (some path) None & info [ "t" ])
   and+ pr = Arg.(value & opt (some path) None & info [ "a" ])
   and+ emit_llvm = Arg.(value & flag & info [ "emit-llvm" ])
-  and+ _ = Arg.(value & opt (enum [ ("3", 3) ]) 3 & info [ "g" ]) in
+  and+ _ = Arg.(value & opt (enum [ ("4", 4) ]) 4 & info [ "g" ]) in
   splc src_path (Option.get out_path) lr pr emit_llvm
 
 let () = exit (Cmd.eval' cmd)
