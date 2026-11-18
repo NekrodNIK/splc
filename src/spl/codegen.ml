@@ -14,196 +14,196 @@ type t = {
 
 type error = GetTargetError of string | WriteToFileError of string
 
-let const_i64 st x = Llvm.(const_of_int64 (i64_type st.context) x false)
+(* let const_i64 st x = Llvm.(const_of_int64 (i64_type st.context) x false) *)
 
-let const_i1 st x =
-  Llvm.(const_of_int64 (i1_type st.context) (if x then 1L else 0L) false)
+(* let const_i1 st x = *)
+  (* Llvm.(const_of_int64 (i1_type st.context) (if x then 1L else 0L) false) *)
 
-let to_i64 st v = Llvm.(build_zext v (i64_type st.context) "" st.builder)
-let to_i1 st v = Llvm.(build_icmp Icmp.Ne v (const_i64 st 0L) "" st.builder)
-let cur_block st = Llvm.insertion_block st.builder
-let append_block st name = Llvm.append_block st.context name st.cur_func
+(* let to_i64 st v = Llvm.(build_zext v (i64_type st.context) "" st.builder) *)
+(* let to_i1 st v = Llvm.(build_icmp Icmp.Ne v (const_i64 st 0L) "" st.builder) *)
+(* let cur_block st = Llvm.insertion_block st.builder *)
+(* let append_block st name = Llvm.append_block st.context name st.cur_func *)
 
-let gen_unop st op rhs =
-  match op with
-  | Syntax.NegOp -> Llvm.build_neg rhs "" st.builder
-  | Syntax.NotOp -> Llvm.build_not (to_i1 st rhs) "" st.builder |> to_i64 st
+(* let gen_unop st op rhs = *)
+  (* match op with *)
+  (* | Syntax.NegOp -> Llvm.build_neg rhs "" st.builder *)
+  (* | Syntax.NotOp -> Llvm.build_not (to_i1 st rhs) "" st.builder |> to_i64 st *)
 
-let rec gen_expr st (Located.At (_, expr)) =
-  match expr with
-  | Syntax.IntLitExpr n -> const_i64 st n
-  | Syntax.BoolLitExpr value -> const_i64 st (if value then 1L else 0L)
-  | Syntax.IdentExpr id ->
-      let ptr = Hashtbl.find st.names id in
-      Llvm.build_load (Llvm.i64_type st.context) ptr "" st.builder
-  | Syntax.BinOpExpr (binop, lhs, rhs) -> gen_binop st binop lhs rhs
-  | Syntax.UnaryOpExpr (unop, rhs) -> gen_unop st unop (gen_expr st rhs)
-  | Syntax.CallExpr (At (_, expr), args) ->
-      let func, func_type =
-        match expr with
-        | Syntax.IdentExpr id -> Hashtbl.find st.funcs id
-        | _ -> failwith "unsupported callee"
-      in
-      Llvm.build_call func_type func
-        (Array.of_list (List.map (gen_expr st) args))
-        "" st.builder
-  | _ -> failwith "unsupported expr"
+(* let rec gen_expr st (Located.At (_, expr)) = *)
+  (* match expr with *)
+  (* | Syntax.IntLitExpr n -> const_i64 st n *)
+  (* | Syntax.BoolLitExpr value -> const_i64 st (if value then 1L else 0L) *)
+  (* | Syntax.IdentExpr id -> *)
+      (* let ptr = Hashtbl.find st.names id in *)
+      (* Llvm.build_load (Llvm.i64_type st.context) ptr "" st.builder *)
+  (* | Syntax.BinOpExpr (binop, lhs, rhs) -> gen_binop st binop lhs rhs *)
+  (* | Syntax.UnaryOpExpr (unop, rhs) -> gen_unop st unop (gen_expr st rhs) *)
+  (* | Syntax.CallExpr (At (_, expr), args) -> *)
+      (* let func, func_type = *)
+        (* match expr with *)
+        (* | Syntax.IdentExpr id -> Hashtbl.find st.funcs id *)
+        (* | _ -> failwith "unsupported callee" *)
+      (* in *)
+      (* Llvm.build_call func_type func *)
+        (* (Array.of_list (List.map (gen_expr st) args)) *)
+        (* "" st.builder *)
+  (* | _ -> failwith "unsupported expr" *)
 
-and gen_binop st op lhs_expr rhs_expr =
-  let icmp c =
-    Llvm.build_icmp c (gen_expr st lhs_expr) (gen_expr st rhs_expr) ""
-      st.builder
-    |> to_i64 st
-  in
-  let eager build =
-    build (gen_expr st lhs_expr) (gen_expr st rhs_expr) "" st.builder
-  in
-  let short_circuit ~is_and =
-    let lhs = to_i1 st (gen_expr st lhs_expr) in
-    let lhs_bb = cur_block st in
+(* and gen_binop st op lhs_expr rhs_expr = *)
+  (* let icmp c = *)
+    (* Llvm.build_icmp c (gen_expr st lhs_expr) (gen_expr st rhs_expr) "" *)
+      (* st.builder *)
+    (* |> to_i64 st *)
+  (* in *)
+  (* let eager build = *)
+    (* build (gen_expr st lhs_expr) (gen_expr st rhs_expr) "" st.builder *)
+  (* in *)
+  (* let short_circuit ~is_and = *)
+    (* let lhs = to_i1 st (gen_expr st lhs_expr) in *)
+    (* let lhs_bb = cur_block st in *)
 
-    let rhs_bb = append_block st "logic.rhs" in
-    let end_bb = append_block st "logic.end" in
+    (* let rhs_bb = append_block st "logic.rhs" in *)
+    (* let end_bb = append_block st "logic.end" in *)
 
-    let _ =
-      if is_and then Llvm.build_cond_br lhs rhs_bb end_bb st.builder
-      else Llvm.build_cond_br lhs end_bb rhs_bb st.builder
-    in
-    let short_value = const_i1 st (not is_and) in
+    (* let _ = *)
+      (* if is_and then Llvm.build_cond_br lhs rhs_bb end_bb st.builder *)
+      (* else Llvm.build_cond_br lhs end_bb rhs_bb st.builder *)
+    (* in *)
+    (* let short_value = const_i1 st (not is_and) in *)
 
-    Llvm.position_at_end rhs_bb st.builder;
-    let rhs = to_i1 st (gen_expr st rhs_expr) in
-    let rhs_bb = cur_block st in
-    let _ = Llvm.build_br end_bb st.builder in
+    (* Llvm.position_at_end rhs_bb st.builder; *)
+    (* let rhs = to_i1 st (gen_expr st rhs_expr) in *)
+    (* let rhs_bb = cur_block st in *)
+    (* let _ = Llvm.build_br end_bb st.builder in *)
 
-    Llvm.position_at_end end_bb st.builder;
-    Llvm.build_phi [ (short_value, lhs_bb); (rhs, rhs_bb) ] "" st.builder
-    |> to_i64 st
-  in
+    (* Llvm.position_at_end end_bb st.builder; *)
+    (* Llvm.build_phi [ (short_value, lhs_bb); (rhs, rhs_bb) ] "" st.builder *)
+    (* |> to_i64 st *)
+  (* in *)
 
-  match op with
-  | Syntax.AddOp -> eager Llvm.build_add
-  | Syntax.SubOp -> eager Llvm.build_sub
-  | Syntax.MulOp -> eager Llvm.build_mul
-  | Syntax.DivOp -> eager Llvm.build_sdiv
-  | Syntax.AndOp -> short_circuit ~is_and:true
-  | Syntax.OrOp -> short_circuit ~is_and:false
-  | Syntax.LtOp -> icmp Llvm.Icmp.Slt
-  | Syntax.LeOp -> icmp Llvm.Icmp.Sle
-  | Syntax.GtOp -> icmp Llvm.Icmp.Sgt
-  | Syntax.GeOp -> icmp Llvm.Icmp.Sge
-  | Syntax.EqOp -> icmp Llvm.Icmp.Eq
-  | Syntax.NeOp -> icmp Llvm.Icmp.Ne
+  (* match op with *)
+  (* | Syntax.AddOp -> eager Llvm.build_add *)
+  (* | Syntax.SubOp -> eager Llvm.build_sub *)
+  (* | Syntax.MulOp -> eager Llvm.build_mul *)
+  (* | Syntax.DivOp -> eager Llvm.build_sdiv *)
+  (* | Syntax.AndOp -> short_circuit ~is_and:true *)
+  (* | Syntax.OrOp -> short_circuit ~is_and:false *)
+  (* | Syntax.LtOp -> icmp Llvm.Icmp.Slt *)
+  (* | Syntax.LeOp -> icmp Llvm.Icmp.Sle *)
+  (* | Syntax.GtOp -> icmp Llvm.Icmp.Sgt *)
+  (* | Syntax.GeOp -> icmp Llvm.Icmp.Sge *)
+  (* | Syntax.EqOp -> icmp Llvm.Icmp.Eq *)
+  (* | Syntax.NeOp -> icmp Llvm.Icmp.Ne *)
 
-let block_is_open st =
-  st.builder |> Llvm.insertion_block |> Llvm.block_terminator |> Option.is_none
+(* let block_is_open st = *)
+  (* st.builder |> Llvm.insertion_block |> Llvm.block_terminator |> Option.is_none *)
 
-let rec gen_stmt st (Located.At (_, stmt)) =
-  if block_is_open st then
-    match stmt with
-    | Syntax.BlockStmt stmts -> List.iter (gen_stmt st) stmts
-    | Syntax.DeclStmt (_, At (_, id), expr) ->
-        let ptr = Llvm.(build_alloca (i64_type st.context) id st.builder) in
-        let () = Hashtbl.add st.names id ptr in
-        ignore @@ Llvm.build_store (gen_expr st expr) ptr st.builder
-    | Syntax.AssignStmt (At (_, id), expr) ->
-        let ptr = Hashtbl.find st.names id in
-        ignore @@ Llvm.build_store (gen_expr st expr) ptr st.builder
-    | Syntax.ReturnStmt expr ->
-        ignore @@ Llvm.build_ret (gen_expr st expr) st.builder
-    | Syntax.ContinueStmt ->
-        ignore @@ Llvm.build_br st.loop_ctx.cond_bb st.builder
-    | Syntax.BreakStmt -> ignore @@ Llvm.build_br st.loop_ctx.end_bb st.builder
-    | Syntax.IfStmt (cond_expr, then_stmt, else_opt) ->
-        let then_bb = append_block st "if.then" in
-        let else_bb, ifcont_bb =
-          match else_opt with
-          | Some _ ->
-              let else_bb = append_block st "if.else" in
-              let ifcont_bb = append_block st "if.cont" in
-              (else_bb, ifcont_bb)
-          | None -> (fun x -> (x, x)) (append_block st "if.cont")
-        in
+(* let rec gen_stmt st (Located.At (_, stmt)) = *)
+  (* if block_is_open st then *)
+    (* match stmt with *)
+    (* | Syntax.BlockStmt stmts -> List.iter (gen_stmt st) stmts *)
+    (* | Syntax.DeclStmt (_, At (_, id), expr) -> *)
+        (* let ptr = Llvm.(build_alloca (i64_type st.context) id st.builder) in *)
+        (* let () = Hashtbl.add st.names id ptr in *)
+        (* ignore @@ Llvm.build_store (gen_expr st expr) ptr st.builder *)
+    (* | Syntax.AssignStmt (At (_, id), expr) -> *)
+        (* let ptr = Hashtbl.find st.names id in *)
+        (* ignore @@ Llvm.build_store (gen_expr st expr) ptr st.builder *)
+    (* | Syntax.ReturnStmt expr -> *)
+        (* ignore @@ Llvm.build_ret (gen_expr st expr) st.builder *)
+    (* | Syntax.ContinueStmt -> *)
+        (* ignore @@ Llvm.build_br st.loop_ctx.cond_bb st.builder *)
+    (* | Syntax.BreakStmt -> ignore @@ Llvm.build_br st.loop_ctx.end_bb st.builder *)
+    (* | Syntax.IfStmt (cond_expr, then_stmt, else_opt) -> *)
+        (* let then_bb = append_block st "if.then" in *)
+        (* let else_bb, ifcont_bb = *)
+          (* match else_opt with *)
+          (* | Some _ -> *)
+              (* let else_bb = append_block st "if.else" in *)
+              (* let ifcont_bb = append_block st "if.cont" in *)
+              (* (else_bb, ifcont_bb) *)
+          (* | None -> (fun x -> (x, x)) (append_block st "if.cont") *)
+        (* in *)
 
-        let cond = to_i1 st (gen_expr st cond_expr) in
-        let _ = Llvm.build_cond_br cond then_bb else_bb st.builder in
+        (* let cond = to_i1 st (gen_expr st cond_expr) in *)
+        (* let _ = Llvm.build_cond_br cond then_bb else_bb st.builder in *)
 
-        let _ = gen_branch st then_bb ifcont_bb then_stmt in
-        let _ = Option.iter (gen_branch st else_bb ifcont_bb) else_opt in
+        (* let _ = gen_branch st then_bb ifcont_bb then_stmt in *)
+        (* let _ = Option.iter (gen_branch st else_bb ifcont_bb) else_opt in *)
 
-        Llvm.position_at_end ifcont_bb st.builder
-    | Syntax.WhileStmt (cond_expr, body_stmt) ->
-        let prev_cond_bb = st.loop_ctx.cond_bb in
-        let prev_end_bb = st.loop_ctx.end_bb in
+        (* Llvm.position_at_end ifcont_bb st.builder *)
+    (* | Syntax.WhileStmt (cond_expr, body_stmt) -> *)
+        (* let prev_cond_bb = st.loop_ctx.cond_bb in *)
+        (* let prev_end_bb = st.loop_ctx.end_bb in *)
 
-        let cond_bb = append_block st "while.cond" in
-        let body_bb = append_block st "while.body" in
-        let end_bb = append_block st "while.end" in
+        (* let cond_bb = append_block st "while.cond" in *)
+        (* let body_bb = append_block st "while.body" in *)
+        (* let end_bb = append_block st "while.end" in *)
 
-        st.loop_ctx <- { cond_bb; end_bb };
-        let _ = Llvm.build_br cond_bb st.builder in
+        (* st.loop_ctx <- { cond_bb; end_bb }; *)
+        (* let _ = Llvm.build_br cond_bb st.builder in *)
 
-        Llvm.position_at_end cond_bb st.builder;
-        let cond = to_i1 st (gen_expr st cond_expr) in
-        let _ = Llvm.build_cond_br cond body_bb end_bb st.builder in
+        (* Llvm.position_at_end cond_bb st.builder; *)
+        (* let cond = to_i1 st (gen_expr st cond_expr) in *)
+        (* let _ = Llvm.build_cond_br cond body_bb end_bb st.builder in *)
 
-        gen_branch st body_bb cond_bb body_stmt;
+        (* gen_branch st body_bb cond_bb body_stmt; *)
 
-        st.loop_ctx <- { cond_bb = prev_cond_bb; end_bb = prev_end_bb };
-        Llvm.position_at_end end_bb st.builder
-    | Syntax.ExprStmt expr ->
-        let _ = gen_expr st expr in
-        ()
-    | _ -> assert false
+        (* st.loop_ctx <- { cond_bb = prev_cond_bb; end_bb = prev_end_bb }; *)
+        (* Llvm.position_at_end end_bb st.builder *)
+    (* | Syntax.ExprStmt expr -> *)
+        (* let _ = gen_expr st expr in *)
+        (* () *)
+    (* | _ -> assert false *)
 
-and gen_branch st bb cont_bb stmt =
-  Llvm.position_at_end bb st.builder;
-  gen_stmt st stmt;
-  if block_is_open st then ignore @@ Llvm.build_br cont_bb st.builder
+(* and gen_branch st bb cont_bb stmt = *)
+  (* Llvm.position_at_end bb st.builder; *)
+  (* gen_stmt st stmt; *)
+  (* if block_is_open st then ignore @@ Llvm.build_br cont_bb st.builder *)
 
-let gen_top_decl st (Located.At (_, top_decl)) =
-  let func_type =
-    match top_decl with
-    | Syntax.FuncTopDecl (At (_, id), params, _)
-    | Syntax.ExternTopDecl (At (_, id), params) ->
-        Llvm.function_type (Llvm.i64_type st.context)
-        @@ Array.of_list (List.map (fun _ -> Llvm.i64_type st.context) params)
-  in
-  let id, func =
-    match top_decl with
-    | FuncTopDecl (At (_, id), _, _) ->
-        (id, Llvm.define_function id func_type st.cur_module)
-    | ExternTopDecl (At (_, id), _) ->
-        (id, Llvm.declare_function id func_type st.cur_module)
-  in
-  Hashtbl.add st.funcs id (func, func_type)
+(* let gen_top_decl st (Located.At (_, top_decl)) = *)
+  (* let func_type = *)
+    (* match top_decl with *)
+    (* | Syntax.FuncTopDecl (At (_, id), params, _) *)
+    (* | Syntax.ExternTopDecl (At (_, id), params) -> *)
+        (* Llvm.function_type (Llvm.i64_type st.context) *)
+        (* @@ Array.of_list (List.map (fun _ -> Llvm.i64_type st.context) params) *)
+  (* in *)
+  (* let id, func = *)
+    (* match top_decl with *)
+    (* | FuncTopDecl (At (_, id), _, _) -> *)
+        (* (id, Llvm.define_function id func_type st.cur_module) *)
+    (* | ExternTopDecl (At (_, id), _) -> *)
+        (* (id, Llvm.declare_function id func_type st.cur_module) *)
+  (* in *)
+  (* Hashtbl.add st.funcs id (func, func_type) *)
 
-let gen_func_body st id params body =
-  let func, func_type = Hashtbl.find st.funcs id in
-  st.cur_func <- func;
-  let bb = Llvm.entry_block func in
-  Llvm.position_at_end bb st.builder;
-  List.iteri
-    (fun ind (Located.At (_, param)) ->
-      Hashtbl.add st.names param
-      @@
-      let param_value = Llvm.param func ind in
-      let ptr = Llvm.build_alloca (Llvm.i64_type st.context) param st.builder in
-      let _ = Llvm.build_store param_value ptr st.builder in
-      let () = Hashtbl.add st.names param ptr in
-      ptr)
-    params;
-  gen_stmt st body;
-  if block_is_open st then ignore @@ Llvm.build_ret (const_i64 st 0L) st.builder
+(* let gen_func_body st id params body = *)
+  (* let func, func_type = Hashtbl.find st.funcs id in *)
+  (* st.cur_func <- func; *)
+  (* let bb = Llvm.entry_block func in *)
+  (* Llvm.position_at_end bb st.builder; *)
+  (* List.iteri *)
+    (* (fun ind (Located.At (_, param)) -> *)
+      (* Hashtbl.add st.names param *)
+      (* @@ *)
+      (* let param_value = Llvm.param func ind in *)
+      (* let ptr = Llvm.build_alloca (Llvm.i64_type st.context) param st.builder in *)
+      (* let _ = Llvm.build_store param_value ptr st.builder in *)
+      (* let () = Hashtbl.add st.names param ptr in *)
+      (* ptr) *)
+    (* params; *)
+  (* gen_stmt st body; *)
+  (* if block_is_open st then ignore @@ Llvm.build_ret (const_i64 st 0L) st.builder *)
 
-let gen_ast st (Located.At (_, ast)) =
-  List.iter (gen_top_decl st) ast;
-  List.iter
-    (function
-      | Located.At (_, Syntax.FuncTopDecl (At (_, id), params, body)) ->
-          gen_func_body st id params body
-      | _ -> ())
-    ast
+(* let gen_ast st (Located.At (_, ast)) = *)
+  (* List.iter (gen_top_decl st) ast; *)
+  (* List.iter *)
+    (* (function *)
+      (* | Located.At (_, Syntax.FuncTopDecl (At (_, id), params, body)) -> *)
+          (* gen_func_body st id params body *)
+      (* | _ -> ()) *)
+    (* ast *)
 
 let rec emit ~ast ~module_name ~output_path =
   Llvm_all_backends.initialize ();
@@ -233,7 +233,7 @@ let rec emit ~ast ~module_name ~output_path =
   in
 
   let* () = set_target st in
-  let () = gen_ast st ast in
+  (* let () = gen_ast st ast in *)
 
   Llvm.delete_function cur_func;
 

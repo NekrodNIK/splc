@@ -87,20 +87,24 @@ module SyntaxReport = struct
           [ lexpr_to_json id_to_str expr ]
           ~comment:(Syntax.unop_to_string op)
     | IdentExpr id -> pack_node "Ident" [] ~comment:(id_to_str id)
+    | StringLitExpr str -> pack_node "StringLiteral" [] ~comment:str
     | IntLitExpr n ->
         pack_node "IntLiteral" [] ~comment:(Printf.sprintf "%Lu" n)
     | BoolLitExpr v -> pack_node "BoolLiteral" [] ~comment:(Bool.to_string v)
-    | CallExpr (lexpr, params) ->
+    | CallExpr (lexpr, args) ->
         pack_node "Call"
           (lexpr_to_json id_to_str lexpr
-          :: List.map (lexpr_to_json id_to_str) params)
+          :: List.map (lexpr_to_json id_to_str) args)
+    | CastExpr (typ, arg) ->
+        pack_node "Cast"
+          [lexpr_to_json id_to_str arg]
     | ErrorExpr err -> lerror_to_json err
 
   and stmt_to_json id_to_str (stmt : 'id Syntax.stmt) =
     match stmt with
     | ExprStmt lexpr -> lexpr_to_json id_to_str lexpr
     | ReturnStmt lexpr -> pack_node "Return" [ lexpr_to_json id_to_str lexpr ]
-    | DeclStmt (mut, lid, lexpr) ->
+    | DeclStmt (mut, lid, typ, lexpr) ->
         pack_node "Declare"
           [ lid_to_json id_to_str lid; lexpr_to_json id_to_str lexpr ]
           ~comment:(Syntax.mut_to_string mut)
@@ -129,14 +133,19 @@ module SyntaxReport = struct
   and lexpr_to_json f = located_to_json (expr_to_json f)
   and lstmt_to_json f = located_to_json (stmt_to_json f)
 
+  let params_to_json id_to_str =
+    List.map (located_to_json (fun (Syntax.Param(lid, _)) ->
+      pack_node "Param" [ lid_to_json id_to_str lid ]
+    ))
+
   let top_decl_to_json id_to_str (top_decl : 'id Syntax.top_decl) =
     match top_decl with
-    | ExternTopDecl (lid, params) ->
+    | ExternTopDecl (lid, params, return_typ) ->
         pack_node "ExternDecl"
-          (List.map (lid_to_json id_to_str) (lid :: params))
-    | FuncTopDecl (lid, params, lstmt) ->
+          ((lid_to_json id_to_str lid) :: params_to_json id_to_str params)
+    | FuncTopDecl (lid, params, return_typ, lstmt) ->
         pack_node "FuncDecl"
-          (List.map (lid_to_json id_to_str) (lid :: params)
+          ((lid_to_json id_to_str lid) :: params_to_json id_to_str params
           @ [ lstmt_to_json id_to_str lstmt ])
 
   let to_json id_to_str (ast : 'id Syntax.t) =
