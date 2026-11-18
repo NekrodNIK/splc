@@ -10,9 +10,7 @@ let rec splc src_path out_path lr pr emit_llvm =
       run src lex src_path out_path emit_llvm
     else
       let lexer_error =
-        match lr with
-        | Some lr_path -> lexer_report lex lr_path
-        | None -> false
+        match lr with Some lr_path -> lexer_report lex lr_path | None -> false
       and parser_error =
         match pr with
         | Some pr_path -> parser_report lex pr_path
@@ -42,9 +40,18 @@ and run_codegen ast src_path out_path emit_llvm =
   match Spl.Codegen.emit ~ast ~module_name:src_name ~output_path:llvm_out with
   | Ok () when emit_llvm -> false
   | Ok () -> (
+      let runtime_dir = Filename.temp_dir "spl_runtime" "" in
+      let h_path = Filename.concat runtime_dir "spl_runtime.h" in
+      let c_path = Filename.concat runtime_dir "spl_runtime.c" in
+
+      Out_channel.with_open_bin h_path (fun oc ->
+          Out_channel.output_string oc Spl_runtime.hdr);
+      Out_channel.with_open_bin c_path (fun oc ->
+          Out_channel.output_string oc Spl_runtime.src);
+
       let exit_code =
         Sys.command
-        @@ Filename.quote_command "clang" [ llvm_out; "-o"; out_path ]
+        @@ Filename.quote_command "clang" [ c_path; llvm_out; "-o"; out_path ]
       in
       match exit_code with
       | 0 -> false
@@ -80,12 +87,7 @@ let cmd =
   and+ lr = Arg.(value & opt (some path) None & info [ "t" ])
   and+ pr = Arg.(value & opt (some path) None & info [ "a" ])
   and+ emit_llvm = Arg.(value & flag & info [ "emit-llvm" ])
-  and+ _ =
-    Arg.(
-      value
-      & opt (enum [ ("1", 1); ("2", 2) ]) 2
-      & info [ "g" ])
-  in
+  and+ _ = Arg.(value & opt (enum [ ("4", 4) ]) 4 & info [ "g" ]) in
   splc src_path (Option.get out_path) lr pr emit_llvm
 
 let () = exit (Cmd.eval' cmd)

@@ -38,17 +38,17 @@ let rec eat_n st n : unit res =
     let* _ = eat st in
     eat_n st (n - 1)
 
-let eat_while st pred : string res =
+let eat_while st pred : string =
   let start_offset = !st.loc.offset in
   let rec go x =
     match peek st with
     | Ok ch when pred ch ->
-        let* _ = eat st in
+        let _ = eat st in
         go (x + 1)
-    | _ -> Ok x
+    | _ -> x
   in
 
-  let+ len = go 0 in
+  let len = go 0 in
   String.sub !st.src start_offset len
 
 let is_digit = Char.Ascii.is_digit
@@ -64,10 +64,10 @@ let rec skip_multiline_comment st start_loc : unit res =
       skip_multiline_comment st start_loc
 
 let rec skip_trivia st : unit res =
-  let* _ = eat_while st is_whitespace in
+  let _ = eat_while st is_whitespace in
   match peek_string st 2 with
   | "//" ->
-      let* _ = eat_while st (( <> ) '\n') in
+      let _ = eat_while st (( <> ) '\n') in
       skip_trivia st
   | "/*" ->
       let start_loc = !st.loc in
@@ -76,27 +76,67 @@ let rec skip_trivia st : unit res =
       skip_trivia st
   | _ -> Ok ()
 
-let read_number st : Token.t res =
-  let+ str = eat_while st is_digit in
-  Token.Number str
+let read_number_literal st : Token.t res =
+  let str = eat_while st is_digit in
+  Ok (Token.NumberLiteral str)
+
+let read_string_literal st : Token.t res =
+  let* _ = eat st in
+  let buf = Buffer.create 16 in
+  let rec go () =
+    match eat st with
+    | Ok '"' -> Ok (Token.StringLiteral (Buffer.contents buf))
+    | Ok '\\' -> (
+        match peek st with
+        | Ok (('n' | 't' | '"' | '\\') as ch) ->
+            (match ch with
+              | 'n' -> '\n'
+              | 't' -> '\t'
+              | '"' -> '"'
+              | '\\' -> '\\'
+              | _ -> assert false)
+            |> Buffer.add_char buf;
+            ignore @@ eat st;
+            go ()
+        | Ok _ -> Ok (Token.Error UnknownEscapeSequence)
+        | Error _ -> Ok (Token.Error UnterminatedStringLiteral))
+    | Ok ch ->
+        Buffer.add_char buf ch;
+        go ()
+    | Error _ -> Ok (Token.Error UnterminatedStringLiteral)
+  in
+  go ()
 
 let read_ident st : Token.t res =
-  let+ str = eat_while st (fun ch -> is_digit ch || is_non_digit ch) in
-  match str with
-  | "val" -> Token.Val
-  | "var" -> Token.Var
-  | "return" -> Token.Return
-  | "if" -> Token.If
-  | "else" -> Token.Else
-  | "while" -> Token.While
-  | "break" -> Token.Break
-  | "continue" -> Token.Continue
-  | "true" -> Token.True
-  | "false" -> Token.False
-  | id -> Token.Ident id
+  let str = eat_while st (fun ch -> is_digit ch || is_non_digit ch) in
+  (match str with
+    | "extern" -> Token.Extern
+    | "def" -> Token.Def
+    | "val" -> Token.Val
+    | "var" -> Token.Var
+    | "return" -> Token.Return
+    | "if" -> Token.If
+    | "else" -> Token.Else
+    | "while" -> Token.While
+    | "break" -> Token.Break
+    | "continue" -> Token.Continue
+    | "true" -> Token.True
+    | "false" -> Token.False
+    | "cast" -> Token.Cast
+    (* *)
+    | "Int8" -> Token.Int8
+    | "Int16" -> Token.Int16
+    | "Int32" -> Token.Int32
+    | "Int64" -> Token.Int64
+    | "Bool" -> Token.Bool
+    | "Void" -> Token.Void
+    | "String" -> Token.String
+    (* *)
+    | id -> Token.Ident id)
+  |> Result.ok
 
 let next_is st ch : bool =
-  match peek_nth st 1 with Ok next when next == ch -> true | _ -> false
+  match peek_nth st 1 with Ok next when next = ch -> true | _ -> false
 
 let read_token st : Token.t Located.t res =
   let loc = !st.loc in
@@ -117,6 +157,8 @@ let read_token st : Token.t Located.t res =
     | '*' -> one Token.Star
     | '/' -> one Token.Slash
     | ';' -> one Token.Semi
+    | ':' -> one Token.Colon
+    | ',' -> one Token.Comma
     | '=' when next_is st '=' -> two Token.Eq
     | '=' -> one Token.Assign
     | '<' when next_is st '=' -> two Token.Le
@@ -127,8 +169,9 @@ let read_token st : Token.t Located.t res =
     | '!' -> one Token.Not
     | '&' when next_is st '&' -> two Token.And
     | '|' when next_is st '|' -> two Token.Or
-    | '0' -> one (Token.Number "0")
-    | ch when is_digit ch -> read_number st
+    | '0' -> one (Token.NumberLiteral "0")
+    | '"' -> read_string_literal st
+    | ch when is_digit ch -> read_number_literal st
     | ch when is_non_digit ch -> read_ident st
     | ch -> one_err (Token.Error (UnknownToken ch))
   in

@@ -16,19 +16,32 @@ type binop =
 type unop = NegOp | NotOp [@@deriving show]
 type mut = Val | Var [@@deriving show]
 
+type typ =
+  | Int8Type
+  | Int16Type
+  | Int32Type
+  | Int64Type
+  | StringType
+  | BoolType
+  | VoidType
+[@@deriving show]
+
 type 'id expr =
   | BinOpExpr of binop * 'id lexpr * 'id lexpr
   | UnaryOpExpr of unop * 'id lexpr
   | IdentExpr of 'id
   | IntLitExpr of int64
   | BoolLitExpr of bool
+  | StringLitExpr of string
+  | CallExpr of 'id lexpr * 'id lexpr list
   | ErrorExpr of lerror
+  | CastExpr of ltyp * 'id lexpr 
 [@@deriving show]
 
 and 'id stmt =
   | ExprStmt of 'id lexpr
   | ReturnStmt of 'id lexpr
-  | DeclStmt of mut * 'id lid * 'id lexpr
+  | DeclStmt of mut * 'id lid * ltyp * 'id lexpr
   | AssignStmt of 'id lid * 'id lexpr
   | IfStmt of 'id lexpr * 'id lstmt * 'id lstmt option
   | WhileStmt of 'id lexpr * 'id lstmt
@@ -38,12 +51,21 @@ and 'id stmt =
   | ErrorStmt of lerror
 [@@deriving show]
 
-and 'id lexpr = 'id expr Located.t [@@deriving show]
+and 'id top_decl =
+  | ExternTopDecl of 'id lid * 'id lparam list * ltyp
+  | FuncTopDecl of 'id lid * 'id lparam list * ltyp * 'id lstmt
+[@@deriving show]
+
+and 'id param = Param of 'id lid * ltyp [@@deriving show]
+and 'id lparam = 'id param Located.t [@@deriving show]
+and 'id ltop_decl = 'id top_decl Located.t [@@deriving show]
 and 'id lstmt = 'id stmt Located.t [@@deriving show]
+and 'id lexpr = 'id expr Located.t [@@deriving show]
 and lerror = Errors.t Located.t [@@deriving show]
 and 'id lid = 'id Located.t [@@deriving show]
+and ltyp = typ Located.t [@@deriving show]
 
-type 'id t = 'id lstmt list [@@deriving show]
+type 'id t = 'id ltop_decl list [@@deriving show]
 
 let binop_precedence = function
   | AndOp | OrOp -> 1

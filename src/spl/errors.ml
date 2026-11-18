@@ -1,5 +1,7 @@
 type t =
   | UnterminatedMultilineComment
+  | UnterminatedStringLiteral
+  | UnknownEscapeSequence
   | UnknownToken of char
   | MissingSemi
   | Expected of { expected : string; actual : string }
@@ -8,11 +10,15 @@ type t =
   | ExpressionResultUnused
   | AssignToImmutable of string
   | ContinueOutsideLoop
+  | MissingReturn
+  | UnsupportedCallee
   | BreakOutsideLoop
 [@@deriving show]
 
 let to_string = function
   | UnterminatedMultilineComment -> "unterminated multi-line comment"
+  | UnterminatedStringLiteral -> "unterminated string literal"
+  | UnknownEscapeSequence -> "unknown escape sequence"
   | UnknownToken ch -> [%string "unknown token '%{String.of_char ch}'"]
   | MissingSemi -> "missing semicolon"
   | Expected { expected; actual } ->
@@ -23,10 +29,13 @@ let to_string = function
   | AssignToImmutable id ->
       [%string "cannot assign to immutable variable '%{id}'"]
   | ContinueOutsideLoop -> [%string "continue outside loop"]
+  | MissingReturn -> [%string "missing return"]
+  | UnsupportedCallee -> [%string "unsupported callee"]
   | BreakOutsideLoop -> [%string "break outside loop"]
 
 let underline_length = function
-  | UnterminatedMultilineComment | UnknownToken _ | MissingSemi
+  | UnterminatedMultilineComment | UnterminatedStringLiteral
+  | UnknownEscapeSequence | UnknownToken _ | MissingSemi
   | ExpressionResultUnused ->
       1
   | Expected { actual = s }
@@ -35,6 +44,8 @@ let underline_length = function
   | AssignToImmutable s ->
       String.length s
   | ContinueOutsideLoop -> 8
+  | MissingReturn -> 1
+  | UnsupportedCallee -> 1
   | BreakOutsideLoop -> 5
 
 let red s = [%string "\x1b[31m%{s}\x1b[0m"]
