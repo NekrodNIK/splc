@@ -16,7 +16,7 @@ type binop =
 type unop = NegOp | NotOp [@@deriving show]
 type mut = Val | Var [@@deriving show]
 
-type typ =
+type type_ =
   | Int8Type
   | Int16Type
   | Int32Type
@@ -35,13 +35,13 @@ type 'id expr =
   | StringLitExpr of string
   | CallExpr of 'id lexpr * 'id lexpr list
   | ErrorExpr of lerror
-  | CastExpr of ltyp * 'id lexpr 
+  | CastExpr of ltype * 'id lexpr 
 [@@deriving show]
 
 and 'id stmt =
   | ExprStmt of 'id lexpr
   | ReturnStmt of 'id lexpr
-  | DeclStmt of mut * 'id lid * ltyp * 'id lexpr
+  | DeclStmt of mut * 'id lid * ltype * 'id lexpr
   | AssignStmt of 'id lid * 'id lexpr
   | IfStmt of 'id lexpr * 'id lstmt * 'id lstmt option
   | WhileStmt of 'id lexpr * 'id lstmt
@@ -52,18 +52,18 @@ and 'id stmt =
 [@@deriving show]
 
 and 'id top_decl =
-  | ExternTopDecl of 'id lid * 'id lparam list * ltyp
-  | FuncTopDecl of 'id lid * 'id lparam list * ltyp * 'id lstmt
+  | ExternTopDecl of 'id lid * 'id lparam list * ltype
+  | FuncTopDecl of 'id lid * 'id lparam list * ltype * 'id lstmt
 [@@deriving show]
 
-and 'id param = Param of 'id lid * ltyp [@@deriving show]
+and 'id param = Param of 'id lid * ltype [@@deriving show]
 and 'id lparam = 'id param Located.t [@@deriving show]
 and 'id ltop_decl = 'id top_decl Located.t [@@deriving show]
 and 'id lstmt = 'id stmt Located.t [@@deriving show]
 and 'id lexpr = 'id expr Located.t [@@deriving show]
 and lerror = Errors.t Located.t [@@deriving show]
 and 'id lid = 'id Located.t [@@deriving show]
-and ltyp = typ Located.t [@@deriving show]
+and ltype = type_ Located.t [@@deriving show]
 
 type 'id t = 'id ltop_decl list [@@deriving show]
 

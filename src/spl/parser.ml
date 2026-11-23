@@ -26,7 +26,7 @@ let parse_unop =
   | Not -> Some Syntax.NotOp
   | _ -> None
 
-let parse_typ =
+let parse_type =
   satisfy_map "type" @@ function
   | Int8 -> Some Syntax.Int8Type
   | Int16 -> Some Syntax.Int16Type
@@ -39,7 +39,7 @@ let parse_typ =
 
 let parse_type_annotation =
   let* _ = expect Colon in
-  let+ typ = parse_typ in
+  let+ typ = parse_type in
   typ
 
 let recover_expr =
@@ -88,7 +88,6 @@ and parse_call_expr () =
    Located.At (loc, Syntax.CallExpr (primary_expr, args)))
   <|> return primary_expr
 
-(* FIXME *)
 and parse_cast_expr () =
   let recovery (Located.At (loc, _) as error) =
     register_err error
@@ -102,7 +101,7 @@ and parse_cast_expr () =
   let* (At (loc, _)) = expect Cast in
   let* expr, has_errors =
     (let* _ = expect Lt in
-     let* typ = parse_typ in
+     let* typ = parse_type in
      let* _ = expect Gt in
      let* _ = expect LParen in
      let* expr = parse_expr () in
