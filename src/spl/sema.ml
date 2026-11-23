@@ -97,7 +97,7 @@ let check_main_declared st = check_bounded "main" Located.zero_location st
 let check_ast (Located.At (loc, tree)) =
   let st =
     List.fold_left (Fun.flip check_top_decl) empty tree
-    |> check_main_declared
+    (* |> check_main_declared *)
     |> check_list_fold
          (function
            | Located.At (_, Syntax.FuncTopDecl (At (_, id), params, _, body)) ->

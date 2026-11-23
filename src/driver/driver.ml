@@ -72,7 +72,7 @@ and lexer_report lex lr_path =
 
 and parser_report lex pr_path =
   let ast, parser_errors = Spl.Parser.parse lex in
-  let report = Spl.Report.report_ast Fun.id ast in
+  let report = Spl.Report.report_ast ast in
   let () =
     Out_channel.with_open_text pr_path
       ((Fun.flip Yojson.Basic.pretty_to_channel) report)
