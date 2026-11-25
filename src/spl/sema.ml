@@ -1,3 +1,4 @@
+(* FIXME *)
 module StringMap = Map.Make (String)
 
 type t = { env : Syntax.mut StringMap.t; errors : Errors.t Located.t list }
@@ -20,6 +21,16 @@ let check_assignable id loc st =
 
 let check_declarable id loc st =
   if StringMap.mem id st.env then add_error loc (Redeclaration id) st else st
+
+let check_non_void_type loc type_ st =
+  match type_ with
+  | Located.At (_, Syntax.VoidType) -> add_error loc VoidDeclType st
+  | _ -> st
+
+let check_type_defined loc type_ err st =
+  match type_ with
+  | Located.At (_, Syntax.UndefType) -> add_error loc err st
+  | _ -> st
 
 let with_scope f st =
   let st' = f st in
@@ -44,11 +55,15 @@ let rec check_expr (Located.At (loc, expr)) st =
 let rec check_stmt ?(in_loop = false) (Located.At (loc, stmt)) st =
   match stmt with
   | Syntax.ExprStmt expr -> check_expr expr st
-  | Syntax.DeclStmt (mut, At (_, id), typ, rhs) ->
-      check_declarable id loc st |> check_expr rhs |> bind_id id mut
+  | Syntax.DeclStmt (mut, At (_, id), type_, rhs) ->
+      check_type_defined loc type_ MissingDeclType st
+      |> check_non_void_type loc type_
+      |> check_declarable id loc
+      |> check_expr rhs
+      |> bind_id id mut
   | Syntax.AssignStmt (At (loc, id), rhs) ->
       check_assignable id loc st |> check_expr rhs
-  | Syntax.ReturnStmt expr -> check_expr expr st
+  | Syntax.ReturnStmt Some expr -> check_expr expr st
   | Syntax.IfStmt (cond, then_stmt, Some else_stmt) ->
       st
       |> check_expr cond
@@ -77,31 +92,42 @@ let rec always_returns (Located.At (loc, stmt)) =
 
 let check_always_returns stmt st =
   if always_returns stmt then st
-  else add_error (Located.get_loc stmt) Errors.MissingReturn st
+  else add_error (Located.get_loc stmt) MissingReturn st
 
 let check_top_decl (Located.At (loc, top_decl)) st =
   match top_decl with
-  | Syntax.FuncTopDecl (At (loc, id), _, _, _)
-  | Syntax.ExternTopDecl (At (loc, id), _, _) ->
-      check_declarable id loc st |> bind_id id Val
+  | Syntax.FuncTopDecl (At (loc, id), params, return_type, _)
+  | Syntax.ExternTopDecl (At (loc, id), params, return_type) ->
+      check_type_defined loc return_type MissingReturnType st
+      |> check_list_fold
+           (fun (Located.At (loc, Syntax.Param (_, type_))) ->
+             check_type_defined loc type_ MissingParamType)
+           params
+      |> check_declarable id loc
+      |> bind_id id Val
 
-let check_func_body id params body st =
+let check_func_body id params return_type body st =
   check_list_fold
-    (fun (Located.At (loc, Syntax.Param(At(_, param_id), typ))) st ->
+    (fun (Located.At (loc, Syntax.Param (At (_, param_id), typ))) st ->
       st |> check_declarable param_id loc |> bind_id param_id Var)
     params st
   |> check_stmt body
+  |>
+  if return_type != Syntax.VoidType then check_always_returns body else Fun.id
 
 let check_main_declared st = check_bounded "main" Located.zero_location st
 
 let check_ast (Located.At (loc, tree)) =
   let st =
     List.fold_left (Fun.flip check_top_decl) empty tree
-    (* |> check_main_declared *)
+    |> check_main_declared
     |> check_list_fold
          (function
-           | Located.At (_, Syntax.FuncTopDecl (At (_, id), params, _, body)) ->
-               with_scope (check_func_body id params body)
+           | Located.At
+               ( _,
+                 Syntax.FuncTopDecl
+                   (At (_, id), params, At (_, return_type), body) ) ->
+               with_scope (check_func_body id params return_type body)
            | _ -> Fun.id)
          tree
   in

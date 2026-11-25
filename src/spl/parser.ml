@@ -38,9 +38,10 @@ let parse_type =
   | _ -> None
 
 let parse_type_annotation =
-  let* _ = expect Colon in
-  let+ typ = parse_type in
-  typ
+  (let* _ = expect Colon in
+   let+ typ = parse_type in
+   typ)
+  <|> save_loc (return Syntax.UndefType)
 
 let recover_expr =
   let recovery (Located.At (loc, _) as error) =
@@ -89,16 +90,17 @@ and parse_call_expr () =
   <|> return primary_expr
 
 and parse_cast_expr () =
-  let recovery (Located.At (loc, _) as error) =
+  let* (At (loc, _)) = expect Cast in
+  let recovery (Located.At (err_loc, _) as error) =
     register_err error
       (return
          (Located.At
             ( loc,
               Syntax.CastExpr
-                (At (loc, Syntax.VoidType), At (loc, Syntax.ErrorExpr error)) )))
+                ( At (err_loc, Syntax.VoidType),
+                  At (err_loc, Syntax.ErrorExpr error) ) )))
   in
 
-  let* (At (loc, _)) = expect Cast in
   let* expr, has_errors =
     (let* _ = expect Lt in
      let* typ = parse_type in
@@ -194,7 +196,12 @@ let parse_decl_stmt =
 
 let parse_return_stmt =
   let* (At (loc, _)) = expect Token.Return in
-  let+ expr = parse_expr () in
+  let+ expr =
+    (let+ _ = lookahead (expect Semi) in
+     None)
+    <|> let+ expr = parse_expr () in
+        Some expr
+  in
   Located.At (loc, Syntax.ReturnStmt expr)
 
 let parse_assign_stmt =
@@ -231,7 +238,9 @@ let rec parse_stmt () =
   parse_block_stmt ()
   <|> parse_cond_stmt ()
   <|> parse_while_stmt ()
-  <|> (let* stmt, has_errors =
+  <|> ((* TODO: replace this with takeWhile *)
+       let* _ = many (expect Semi) in
+       let* stmt, has_errors =
          parse_continue_stmt
          <|> parse_break_stmt
          <|> parse_return_stmt

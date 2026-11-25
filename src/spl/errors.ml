@@ -11,7 +11,12 @@ type t =
   | AssignToImmutable of string
   | ContinueOutsideLoop
   | MissingReturn
+  | MissingReturnType
+  | MissingParamType
+  | MissingDeclType
+  | VoidDeclType
   | UnsupportedCallee
+  | FewArgsToCall
   | BreakOutsideLoop
 [@@deriving show]
 
@@ -30,7 +35,12 @@ let to_string = function
       [%string "cannot assign to immutable variable '%{id}'"]
   | ContinueOutsideLoop -> [%string "continue outside loop"]
   | MissingReturn -> [%string "missing return"]
+  | MissingReturnType -> [%string "missing return type"]
+  | MissingParamType -> [%string "missing parameter type"]
+  | MissingDeclType -> [%string "missing declaration type"]
+  | VoidDeclType -> [%string "declaration type cannot be void"]
   | UnsupportedCallee -> [%string "unsupported callee"]
+  | FewArgsToCall -> [%string "too few arguments to function call"]
   | BreakOutsideLoop -> [%string "break outside loop"]
 
 let underline_length = function
@@ -45,7 +55,12 @@ let underline_length = function
       String.length s
   | ContinueOutsideLoop -> 8
   | MissingReturn -> 1
+  | MissingReturnType -> 1
+  | MissingParamType -> 1
+  | MissingDeclType -> 1
+  | VoidDeclType -> 1
   | UnsupportedCallee -> 1
+  | FewArgsToCall -> 1
   | BreakOutsideLoop -> 5
 
 let red s = [%string "\x1b[31m%{s}\x1b[0m"]

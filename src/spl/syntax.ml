@@ -24,6 +24,7 @@ type type_ =
   | StringType
   | BoolType
   | VoidType
+  | UndefType
 [@@deriving show]
 
 type 'id expr =
@@ -34,13 +35,13 @@ type 'id expr =
   | BoolLitExpr of bool
   | StringLitExpr of string
   | CallExpr of 'id lexpr * 'id lexpr list
-  | ErrorExpr of lerror
   | CastExpr of ltype * 'id lexpr 
+  | ErrorExpr of lerror
 [@@deriving show]
 
 and 'id stmt =
   | ExprStmt of 'id lexpr
-  | ReturnStmt of 'id lexpr
+  | ReturnStmt of 'id lexpr option
   | DeclStmt of mut * 'id lid * ltype * 'id lexpr
   | AssignStmt of 'id lid * 'id lexpr
   | IfStmt of 'id lexpr * 'id lstmt * 'id lstmt option
@@ -92,3 +93,13 @@ let binop_to_string = function
 
 let unop_to_string = function NegOp -> "-" | NotOp -> "!"
 let mut_to_string = function Val -> "Val" | Var -> "Var"
+
+let type_to_string = function
+  | Int8Type -> "Int8"
+  | Int16Type -> "Int16"
+  | Int32Type -> "Int32"
+  | Int64Type -> "Int64"
+  | StringType -> "String"
+  | BoolType -> "Bool"
+  | VoidType -> "Void"
+  | UndefType -> "Undef"

@@ -70,6 +70,7 @@ struct
     column : int;
     kind : string;
     type_ : string option; [@yojson.default None] [@yojson.name "type"]
+    return_type : string option; [@yojson.default None]
     mut : string option; [@yojson.default None]
     value : string option; [@yojson.default None]
     elems : node list;
@@ -107,20 +108,24 @@ struct
           ~elems:(expr_to_node callee :: List.map expr_to_node args)
           ()
     | Syntax.CastExpr (Located.At (_, type_), arg) ->
-        (* TODO: add type_ field report *)
-        make_node ~kind:"Cast" ~elems:[ expr_to_node arg ] ()
+        make_node ~kind:"Cast"
+          ~elems:[ expr_to_node arg ]
+          ~type_:(Syntax.type_to_string type_)
+          ()
     | Syntax.ErrorExpr err -> error_to_node err
 
   let rec stmt_to_node (Located.At (loc, stmt)) =
     let make_node = make_node ~line:loc.line ~column:loc.col in
     match stmt with
     | Syntax.ExprStmt expr -> expr_to_node expr
-    | Syntax.ReturnStmt expr ->
-        make_node ~kind:"Return" ~elems:[ expr_to_node expr ] ()
-    | Syntax.DeclStmt (mut, id, type_, expr) ->
-        (* TODO: add type_ field report *)
+    | Syntax.ReturnStmt expr_opt ->
+        make_node ~kind:"Return"
+          ~elems:(Option.map expr_to_node expr_opt |> Option.to_list)
+          ()
+    | Syntax.DeclStmt (mut, id, Located.At (_, type_), expr) ->
         make_node ~kind:"Declare"
           ~elems:[ ident_to_node id; expr_to_node expr ]
+          ~type_:(Syntax.type_to_string type_)
           ~mut:(Syntax.mut_to_string mut) ()
     | Syntax.AssignStmt (id, expr) ->
         make_node ~kind:"Assign"
@@ -150,17 +155,17 @@ struct
   let top_decl_to_node (Located.At (loc, top_decl)) =
     let make_node = make_node ~line:loc.line ~column:loc.col in
     match top_decl with
-    | Syntax.ExternTopDecl (id, params, return_type) ->
-        (* TODO: add return_type field report *)
+    | Syntax.ExternTopDecl (id, params, At (_, return_type)) ->
         make_node ~kind:"ExternDecl"
           ~elems:(ident_to_node id :: List.map param_to_node params)
+          ~return_type:(Syntax.type_to_string return_type)
           ()
-    | Syntax.FuncTopDecl (id, params, return_type, body) ->
-        (* TODO: add return_type field report *)
+    | Syntax.FuncTopDecl (id, params, At (_, return_type), body) ->
         make_node ~kind:"FuncDecl"
           ~elems:
             ((ident_to_node id :: List.map param_to_node params)
             @ [ stmt_to_node body ])
+          ~return_type:(Syntax.type_to_string return_type)
           ()
 
   let ast_to_node (Located.At (loc, ast)) =

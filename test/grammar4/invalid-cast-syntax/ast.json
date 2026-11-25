@@ -41,12 +41,26 @@
           "elems": [
           {
             "line": 2,
-            "column": 28,
+            "column": 24,
             "kind": "Error",
             "elems": []
           }
           ]
         }
+        ]
+      },      
+      {
+        "line": 3,
+        "column": 5,
+        "kind": "Return",
+        "elems": [
+          {
+            "line": 3,
+            "column": 12,
+            "kind": "Ident",
+            "value": "x",
+            "elems": []
+          }
         ]
       }
       ]
