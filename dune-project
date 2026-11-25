@@ -13,6 +13,7 @@
     (< 5.6.0)))
   ppx_string
   ppx_deriving
+  ppx_deriving_yojson
   yojson
   cmdliner
   (llvm

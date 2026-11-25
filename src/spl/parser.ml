@@ -1,3 +1,4 @@
+(* FIXME *)
 open Parser_base
 
 let parse_ident =
@@ -25,6 +26,23 @@ let parse_unop =
   | Not -> Some Syntax.NotOp
   | _ -> None
 
+let parse_type =
+  satisfy_map "type" @@ function
+  | Int8 -> Some Syntax.Int8Type
+  | Int16 -> Some Syntax.Int16Type
+  | Int32 -> Some Syntax.Int32Type
+  | Int64 -> Some Syntax.Int64Type
+  | Bool -> Some Syntax.BoolType
+  | String -> Some Syntax.StringType
+  | Void -> Some Syntax.VoidType
+  | _ -> None
+
+let parse_type_annotation =
+  (let* _ = expect Colon in
+   let+ typ = parse_type in
+   typ)
+  <|> save_loc (return Syntax.UndefType)
+
 let recover_expr =
   let recovery (Located.At (loc, _) as error) =
     register_err error (return (Located.At (loc, Syntax.ErrorExpr error)))
@@ -37,7 +55,7 @@ let parse_ident_expr =
 
 let parse_intlit_expr =
   satisfy_map "integer literal" @@ function
-  | Number s ->
+  | NumberLiteral s ->
       Option.map
         (fun n -> Syntax.IntLitExpr n)
         (Scanf.sscanf_opt s "%Lu" Fun.id)
@@ -49,7 +67,57 @@ let parse_boollit_expr =
   | False -> Some (Syntax.BoolLitExpr false)
   | _ -> None
 
-let rec parse_primary_expr () =
+let parse_stringlit_expr =
+  satisfy_map "string literal" @@ function
+  | StringLiteral s -> Some (Syntax.StringLitExpr s)
+  | _ -> None
+
+let rec parse_call_args () =
+  let* (At (loc, _)) = expect LParen in
+  let* params =
+    sep_by
+      (let* _ = not_followed_by (expect RParen) in
+       parse_expr ())
+      (expect Comma)
+  in
+  let+ _ = expect RParen in
+  Located.At (loc, params)
+
+and parse_call_expr () =
+  let* primary_expr = parse_primary_expr () in
+  (let+ (At (loc, args)) = parse_call_args () in
+   Located.At (loc, Syntax.CallExpr (primary_expr, args)))
+  <|> return primary_expr
+
+and parse_cast_expr () =
+  let* (At (loc, _)) = expect Cast in
+  let recovery (Located.At (err_loc, _) as error) =
+    register_err error
+      (return
+         (Located.At
+            ( loc,
+              Syntax.CastExpr
+                ( At (err_loc, Syntax.VoidType),
+                  At (err_loc, Syntax.ErrorExpr error) ) )))
+  in
+
+  let* expr, has_errors =
+    (let* _ = expect Lt in
+     let* typ = parse_type in
+     let* _ = expect Gt in
+     let* _ = expect LParen in
+     let* expr = parse_expr () in
+     let+ _ = expect RParen in
+     Located.At (loc, Syntax.CastExpr (typ, expr)))
+    |> with_recovery recovery
+    |> has_errors
+  in
+  let+ _ =
+    if has_errors then synchronize [ Token.RParen; Token.Semi ] else return ()
+  in
+  expr
+
+and parse_primary_expr () =
   let in_parens =
     let* _ = expect Token.LParen in
     let* expr = parse_expr () in
@@ -57,13 +125,18 @@ let rec parse_primary_expr () =
     expr
   in
   recover_expr
-    (parse_ident_expr <|> parse_intlit_expr <|> parse_boollit_expr <|> in_parens)
+    (parse_stringlit_expr
+    <|> parse_intlit_expr
+    <|> parse_boollit_expr
+    <|> parse_ident_expr
+    <|> parse_cast_expr ()
+    <|> in_parens)
 
 and parse_unop_expr () =
   (let* (At (loc, unop)) = parse_unop in
    let+ rhs = parse_unop_expr () in
    Located.At (loc, Syntax.UnaryOpExpr (unop, rhs)))
-  <|> parse_primary_expr ()
+  <|> parse_call_expr ()
 
 and parse_binop_expr prec =
   let rec loop lhs =
@@ -113,16 +186,22 @@ let parse_decl_stmt =
       | _ -> None)
   in
   let* id = parse_ident in
+  let* typ = parse_type_annotation in
   let+ expr =
     recover_expr
       (let* _ = expect Token.Assign in
        parse_expr ())
   in
-  Located.At (loc, Syntax.DeclStmt (mut, id, expr))
+  Located.At (loc, Syntax.DeclStmt (mut, id, typ, expr))
 
 let parse_return_stmt =
   let* (At (loc, _)) = expect Token.Return in
-  let+ expr = parse_expr () in
+  let+ expr =
+    (let+ _ = lookahead (expect Semi) in
+     None)
+    <|> let+ expr = parse_expr () in
+        Some expr
+  in
   Located.At (loc, Syntax.ReturnStmt expr)
 
 let parse_assign_stmt =
@@ -159,7 +238,9 @@ let rec parse_stmt () =
   parse_block_stmt ()
   <|> parse_cond_stmt ()
   <|> parse_while_stmt ()
-  <|> (let* stmt, has_errors =
+  <|> ((* TODO: replace this with takeWhile *)
+       let* _ = many (expect Semi) in
+       let* stmt, has_errors =
          parse_continue_stmt
          <|> parse_break_stmt
          <|> parse_return_stmt
@@ -176,7 +257,7 @@ let rec parse_stmt () =
 
 and parse_block_stmt () =
   let* (At (loc, _)) = expect Token.LBrace in
-  let* stmts = parse_t () in
+  let* stmts = many (parse_stmt ()) in
   let+ _ = expect Token.RBrace in
   Located.At (loc, Syntax.BlockStmt stmts)
 
@@ -190,7 +271,6 @@ and parse_cond_stmt () =
      Some stmt)
     <|> return None
   in
-
   Located.At (loc, Syntax.IfStmt (cond, then_stmt, else_stmt))
 
 and parse_while_stmt () =
@@ -199,9 +279,39 @@ and parse_while_stmt () =
   let+ stmt = parse_stmt () in
   Located.At (loc, Syntax.WhileStmt (cond, stmt))
 
-and parse_t () = many (parse_stmt ())
+let parse_params =
+  let* _ = expect LParen in
+  let* params =
+    sep_by
+      (let* (At (loc, _) as id) = parse_ident in
+       let+ typ = parse_type_annotation in
+       Located.At (loc, Syntax.Param (id, typ)))
+      (expect Comma)
+  in
+  let+ _ = expect RParen in
+  params
+
+let parse_extern_top_decl =
+  let* (At (loc, _)) = expect Token.Extern in
+  let* _ = expect Token.Def in
+  let* fun_ident = parse_ident in
+  let* params = parse_params in
+  let* return_typ = parse_type_annotation in
+  let+ _ = expect Semi in
+  Located.At (loc, Syntax.ExternTopDecl (fun_ident, params, return_typ))
+
+let parse_fun_top_decl =
+  let* (At (loc, _)) = expect Token.Def in
+  let* fun_ident = parse_ident in
+  let* params = parse_params in
+  let* return_typ = parse_type_annotation in
+  let+ stmt = parse_block_stmt () in
+  Located.At (loc, Syntax.FuncTopDecl (fun_ident, params, return_typ, stmt))
+
+let parse_top_decl = parse_extern_top_decl <|> parse_fun_top_decl
+let parse_t = many parse_top_decl
 
 let parse lex =
   let state = make_initial_state lex in
-  let ast, errors = run_parser (parse_t ()) state in
+  let ast, errors = run_parser parse_t state in
   (ast, errors @ Sema.check_ast ast)

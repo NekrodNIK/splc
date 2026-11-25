@@ -1,3 +1,4 @@
+(* FIXME *)
 module StringMap = Map.Make (String)
 
 type t = { env : Syntax.mut StringMap.t; errors : Errors.t Located.t list }
@@ -5,9 +6,12 @@ type t = { env : Syntax.mut StringMap.t; errors : Errors.t Located.t list }
 let empty = { env = StringMap.empty; errors = [] }
 let add_error loc err st = { st with errors = At (loc, err) :: st.errors }
 let bind_id id mut st = { st with env = StringMap.add id mut st.env }
+let unbind_id id st = { st with env = StringMap.remove id st.env }
 
-let check_bound id loc st =
-  if StringMap.mem id st.env then add_error loc (Redeclaration id) st else st
+let check_bounded id loc st =
+  match StringMap.find_opt id st.env with
+  | Some _ -> st
+  | None -> add_error loc (UndeclaredIdentifier id) st
 
 let check_assignable id loc st =
   match StringMap.find_opt id st.env with
@@ -15,22 +19,51 @@ let check_assignable id loc st =
   | Some Syntax.Val -> add_error loc (AssignToImmutable id) st
   | Some _ -> st
 
+let check_declarable id loc st =
+  if StringMap.mem id st.env then add_error loc (Redeclaration id) st else st
+
+let check_non_void_type loc type_ st =
+  match type_ with
+  | Located.At (_, Syntax.VoidType) -> add_error loc VoidDeclType st
+  | _ -> st
+
+let check_type_defined loc type_ err st =
+  match type_ with
+  | Located.At (_, Syntax.UndefType) -> add_error loc err st
+  | _ -> st
+
+let with_scope f st =
+  let st' = f st in
+  { st with errors = st'.errors }
+
+let check_list_fold f list_ st = List.fold_left (fun acc x -> f x acc) st list_
+
 let rec check_expr (Located.At (loc, expr)) st =
   match expr with
   | Syntax.IdentExpr id when not (StringMap.mem id st.env) ->
       add_error loc (UndeclaredIdentifier id) st
   | BinOpExpr (_, lhs, rhs) -> check_expr lhs st |> check_expr rhs
   | UnaryOpExpr (_, rhs) -> check_expr rhs st
+  | CallExpr (callee, params) ->
+      (match Located.get callee with
+        | Syntax.IdentExpr _ -> st
+        | expr -> add_error (Located.get_loc callee) UnsupportedCallee st)
+      |> check_expr callee
+      |> check_list_fold check_expr params
   | _ -> st
 
 let rec check_stmt ?(in_loop = false) (Located.At (loc, stmt)) st =
   match stmt with
-  | Syntax.DeclStmt (mut, At (_, id), rhs) ->
-      check_bound id loc st |> check_expr rhs |> bind_id id mut
+  | Syntax.ExprStmt expr -> check_expr expr st
+  | Syntax.DeclStmt (mut, At (_, id), type_, rhs) ->
+      check_type_defined loc type_ MissingDeclType st
+      |> check_non_void_type loc type_
+      |> check_declarable id loc
+      |> check_expr rhs
+      |> bind_id id mut
   | Syntax.AssignStmt (At (loc, id), rhs) ->
       check_assignable id loc st |> check_expr rhs
-  | Syntax.ExprStmt _ -> add_error loc ExpressionResultUnused st
-  | Syntax.ReturnStmt expr -> check_expr expr st
+  | Syntax.ReturnStmt Some expr -> check_expr expr st
   | Syntax.IfStmt (cond, then_stmt, Some else_stmt) ->
       st
       |> check_expr cond
@@ -45,10 +78,57 @@ let rec check_stmt ?(in_loop = false) (Located.At (loc, stmt)) st =
   | Syntax.BreakStmt ->
       if not in_loop then add_error loc BreakOutsideLoop st else st
   | Syntax.BlockStmt stmts ->
-      let st' = List.fold_left (Fun.flip (check_stmt ~in_loop)) st stmts in
-      { st with errors = st'.errors }
+      with_scope (check_list_fold (check_stmt ~in_loop) stmts) st
   | _ -> st
 
+let rec always_returns (Located.At (loc, stmt)) =
+  match stmt with
+  | Syntax.ReturnStmt _ -> true
+  | Syntax.IfStmt (cond, then_stmt, Some else_stmt) ->
+      always_returns then_stmt && always_returns else_stmt
+  | Syntax.IfStmt (cond, then_stmt, None) -> false
+  | Syntax.BlockStmt stmts -> List.exists always_returns stmts
+  | _ -> false
+
+let check_always_returns stmt st =
+  if always_returns stmt then st
+  else add_error (Located.get_loc stmt) MissingReturn st
+
+let check_top_decl (Located.At (loc, top_decl)) st =
+  match top_decl with
+  | Syntax.FuncTopDecl (At (loc, id), params, return_type, _)
+  | Syntax.ExternTopDecl (At (loc, id), params, return_type) ->
+      check_type_defined loc return_type MissingReturnType st
+      |> check_list_fold
+           (fun (Located.At (loc, Syntax.Param (_, type_))) ->
+             check_type_defined loc type_ MissingParamType)
+           params
+      |> check_declarable id loc
+      |> bind_id id Val
+
+let check_func_body id params return_type body st =
+  check_list_fold
+    (fun (Located.At (loc, Syntax.Param (At (_, param_id), typ))) st ->
+      st |> check_declarable param_id loc |> bind_id param_id Var)
+    params st
+  |> check_stmt body
+  |>
+  if return_type != Syntax.VoidType then check_always_returns body else Fun.id
+
+let check_main_declared st = check_bounded "main" Located.zero_location st
+
 let check_ast (Located.At (loc, tree)) =
-  let st = List.fold_left (Fun.flip check_stmt) empty tree in
+  let st =
+    List.fold_left (Fun.flip check_top_decl) empty tree
+    |> check_main_declared
+    |> check_list_fold
+         (function
+           | Located.At
+               ( _,
+                 Syntax.FuncTopDecl
+                   (At (_, id), params, At (_, return_type), body) ) ->
+               with_scope (check_func_body id params return_type body)
+           | _ -> Fun.id)
+         tree
+  in
   st.errors

@@ -1,6 +1,7 @@
 type t =
   | Ident of string
-  | Number of string
+  | NumberLiteral of string
+  | StringLiteral of string
   | True
   | False
   | Val
@@ -16,6 +17,8 @@ type t =
   | LBrace
   | RBrace
   | Semi
+  | Colon
+  | Comma
   | Assign
   | Plus
   | Minus
@@ -30,13 +33,25 @@ type t =
   | Le
   | Gt
   | Ge
+  | Extern
+  | Def
+  | Cast
+  (* *)
+  | Int8
+  | Int16
+  | Int32
+  | Int64
+  | Bool
+  | Void
+  | String
+  (* *)
   | Error of Errors.t
   | Eof
 [@@deriving show]
 
 let to_string token : string =
   match token with
-  | Ident x | Number x -> x
+  | Ident x | NumberLiteral x | StringLiteral x -> x
   | True -> "true"
   | False -> "false"
   | Val -> "val"
@@ -52,6 +67,8 @@ let to_string token : string =
   | LBrace -> "{"
   | RBrace -> "}"
   | Semi -> ";"
+  | Colon -> ":"
+  | Comma -> ","
   | Assign -> "="
   | Plus -> "+"
   | Minus -> "-"
@@ -66,12 +83,24 @@ let to_string token : string =
   | Le -> "<="
   | Gt -> ">"
   | Ge -> ">="
+  | Extern -> "extern"
+  | Def -> "def"
+  | Cast -> "cast"
+  (* *)
+  | Int8 -> "Int8"
+  | Int16 -> "Int16"
+  | Int32 -> "Int32"
+  | Int64 -> "Int64"
+  | Bool-> "Bool"
+  | Void -> "Void"
+  | String -> "String"
+  (* *)
   | Error err -> Errors.to_string err
   | Eof -> ""
 
 let length token =
   match token with
-  | Ident x | Number x -> String.length x
+  | Ident x | NumberLiteral x | StringLiteral x -> String.length x
   | True -> 4
   | False -> 5
   | Val | Var -> 3
@@ -80,7 +109,19 @@ let length token =
   | Else -> 4
   | While | Break -> 5
   | Continue -> 8
-  | LParen | RParen | LBrace | RBrace | Semi -> 1
+  | LParen | RParen | LBrace | RBrace | Semi | Colon | Comma -> 1
   | Assign | Plus | Minus | Star | Slash | Lt | Gt | Not -> 1
   | And | Or | Eq | Ne | Le | Ge -> 2
+  | Extern -> 6
+  | Def -> 3
+  | Cast -> 4
+  (* *)
+  | Int8
+  | Bool 
+  | Void -> 4
+  | Int16 
+  | Int32
+  | Int64 -> 5
+  | String -> 6
+  (* *)
   | Error _ | Eof -> 0

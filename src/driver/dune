@@ -4,3 +4,18 @@
  (libraries cmdliner spl)
  (preprocess
   (pps ppx_deriving.show ppx_string)))
+
+(rule
+ (targets spl_runtime.ml)
+ (deps
+  (:src ../../libruntime/spl_runtime.c)
+  (:hdr ../../libruntime/spl_runtime.h))
+ (action
+  (with-stdout-to
+   %{targets}
+   (progn
+    (echo "let src = {|")
+    (cat %{src})
+    (echo "|}\nlet hdr = {|")
+    (cat %{hdr})
+    (echo "|}\n")))))
